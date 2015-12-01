@@ -1,12 +1,13 @@
 # Project Name
 
-> Pithy project description
+> Spartecpies allows users to search for recipes online.  It gives users the abilty to search for recipes based off a number of a qualifiers (i.e. chicken, high-protein, vegan) which it then returns.  The user can then choose which recipes to add to their shopping list where all of the ingredients will be aggregated.    
+
 
 ## Team
 
-  - __Product Owner__: teamMember
-  - __Scrum Master__: teamMember
-  - __Development Team Members__: teamMember, teamMember
+  - __Product Owner__: Casey Woolley
+  - __Scrum Master__: Eric Hollenberry
+  - __Development Team Members__: Ryan Price (The Last Samurai), Aaron Phillips
 
 ## Table of Contents
 
