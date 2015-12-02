@@ -59,18 +59,18 @@ angular.module('ShoppingListFactory', [])
      */
     var getIngredientList = function() {
       var ingredientList = list.reduce(function(memo, recipe) {
-        return memo.concat(recipe.Ingredients);
+        return memo.concat(recipe.extendedIngredients);
       }, []);
       return Ingredient.formatIngredientList(ingredientList);
     };
 
     /**
      * Remove a recipe from the list
-     * @param  {[int]} id [RecipeID to be removed]
+     * @param  {[int]} id [id to be removed]
      */
     var removeFromList = function(id) {
       for (var i = 0; i < list.length; i++) {
-        if (list[i].RecipeID === id) {
+        if (list[i].id === id) {
           list.splice(i, 1);
           User.updateUserList(list);
         }
@@ -85,7 +85,7 @@ angular.module('ShoppingListFactory', [])
     var recipeInList = function(recipe) {
 
       for (var i = 0; i < list.length; i++) {
-        if (list[i].RecipeID === recipe.RecipeID) {
+        if (list[i].id === recipe.id) {
           return true;
         }
       }

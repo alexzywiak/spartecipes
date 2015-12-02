@@ -11,6 +11,7 @@ angular.module('recipes')
 				Search.getRecipes(query)
 					.then(function(results){
 						$scope.recipes = results;
+            console.log('results = ', results);
 					});
 			};
 
