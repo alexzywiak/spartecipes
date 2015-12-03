@@ -1,40 +1,47 @@
 var request = require('request');
+var auth    = require('../../config/auth.js');
 
 module.exports = function(app) {
 
 	// Search for a query string
   app.route('/search/:query')
     .get(function(req, res, next) {
-      var query = "http://api.bigoven.com/recipes?any_kw=" + req.params.query + "&pg=1&rpp=100&api_key=8hUGXs4S34zTaDWaG1CMMmjfB9I3M944";
+      var query = "https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/findByIngredients?ingredients=" + req.params.query + "&number=30";
+
       var options = {
         url: query,
         headers: {
-          'Content-Type': 'application/json'
+          'X-Mashape-Key': auth.spoonacularAPIkey,
+          'Accept': 'application/json'
         }
       };
       request(options, function(err, response, data) {
         if (err) {
           console.log(err);
         }
-        res.send(data);
+        console.log('data recieved from API request:', data); // debugging -- remove later
+        res.status(200).send(data);
+        next();
       });
     });
 
   // Will find a single recipe by ID
   app.route('/:recipeId')
     .get(function(req, res, next) {
-      var query = "http://api.bigoven.com/recipe/" + req.params.recipeId + "?api_key=8hUGXs4S34zTaDWaG1CMMmjfB9I3M944";
+      var query = "https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/" + req.params.recipeId + "/information";
       var options = {
         url: query,
         headers: {
-          'Content-Type': 'application/json'
+          'X-Mashape-Key': auth.spoonacularAPIkey,
+          'Accept': 'application/json'
         }
       };
       request(options, function(err, response, data) {
         if (err) {
           console.log(err);
         }
-        res.send(data);
+        console.log('data recieved from single ingredient API request: ', data); // debugging -- remove later
+        res.status(200).send(data);
       });
     });
 };

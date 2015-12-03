@@ -1,12 +1,12 @@
 <div class="container content-one">
   <div class="col-centered">
     <div class="row-centered">
-      <div class="list col-md-4" ng-repeat="recipe in recipes | orderBy: '-StarRating' | limitTo:30" recipe-detail-modal recipe="recipe">
+      <div class="list col-md-4" ng-repeat="recipe in recipes | orderBy: '-likes' | limitTo:30" recipe-detail-modal recipe="recipe">
         <div class="picture" style="background-image: linear-gradient(
                                     rgba(0, 0, 0, 0.5),
                                     rgba(0, 0, 0, 0.5)
-                                    ),  url({{recipe.ImageURL}});">
-          <h4 class="text">{{recipe.Title}}</h4>
+                                    ),  url({{recipe.image}});">
+          <h4 class="text">{{recipe.title}}</h4>
         </div>
       </div>
     </div>

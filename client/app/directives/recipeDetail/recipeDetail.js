@@ -12,7 +12,7 @@ angular.module('recipes')
       	 * window, passing in the current recipe's ID.
       	 */
         el.on('click', function() {
-          scope.openModal(scope.recipe.RecipeID);
+          scope.openModal(scope.recipe.id);
         });
       }
     };
