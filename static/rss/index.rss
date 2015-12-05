@@ -1,0 +1,806 @@
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" version="2.0"><channel><title>Lingua Franca v2.0</title><description>JS and Web Engineering
+
+If the Printing Press started the Renaissance, what can Javascript do?</description><link>http://localhost:2368/</link><generator>Ghost 0.7</generator><lastBuildDate>Sat, 05 Dec 2015 22:14:46 GMT</lastBuildDate><atom:link href="http://localhost:2368/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title>Setting up a Wikipedia Factory in Angular</title><description>&lt;p&gt;API's make your tiny little app look like a mother fuckin sorcerer.  With a few well placed $http calls, you can live the Dev dream and have all the data you want without actually having to go get it yourself.  To do that, I'm going to go through how to&lt;/p&gt;</description><link>http://localhost:2368/setting-up-a-wikipedia-factory-in-angular/</link><guid isPermaLink="false">f64974eb-adea-4e73-adba-c4ba56659240</guid><dc:creator>Alex Zywiak</dc:creator><pubDate>Sun, 15 Nov 2015 00:53:41 GMT</pubDate><content:encoded>&lt;p&gt;API's make your tiny little app look like a mother fuckin sorcerer.  With a few well placed $http calls, you can live the Dev dream and have all the data you want without actually having to go get it yourself.  To do that, I'm going to go through how to set up a basic factory in Angular to run some queries to Wikipedia that will grab an image and the article extract for a set of titles.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Set up Factory&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;First, declare a factory onto an app module.  Our factory will expose one function to its subscribing controllers called &lt;code&gt;getWiki&lt;/code&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;angular.module('angularApp')  
+  .factory('wikiFactory', function($http){
+
+  var getWiki = function(title){};
+
+  return {
+    getWiki: getWiki
+  }
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Build our Query URL&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Next up we have to navigate the wilds of the Wiki API and create a url that will pull up our images and extract.  First, we add a variable defining the base Wiki API url. Then, we will define a helper function which will take an object and convert it into an appropriately parsed URL parameters string.  This will allow us to conveniently add in all our search parameters using object notation in our &lt;code&gt;getWiki&lt;/code&gt; function.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;    var wikiUrl = "http://en.wikipedia.org/w/api.php?action=query&amp;amp;format=json&amp;amp;callback=JSON_CALLBACK";
+
+    var buildQuery = function(obj) {
+      var url = wikiUrl;
+      for (var key in obj) {
+        url += '&amp;amp;' + key + '=' + obj[key];
+      }
+      return url;
+    };
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Run some $http&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Our &lt;code&gt;getWiki&lt;/code&gt; function will make use of the angular &lt;code&gt;$http&lt;/code&gt; module and promises to deal with all the async magic.  We will pass an object defining all of our search parameters, use the &lt;code&gt;buildQuery&lt;/code&gt; helper function to collate them into a searchable string, and then send off our request to Wikipedia.  &lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Note on CORS&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;To avoid Cross Origin issues, we'll set our method to &lt;a href="https://en.wikipedia.org/wiki/JSONP"&gt;jsonp&lt;/a&gt; so that everyone plays nice together.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;  var getWiki = function(titlesArray) {
+      var url = buildQuery({
+        titles: titlesArray.join('|'),
+        prop: "pageimages|extracts",
+        pithumbsize: 500,
+        redirects: true,
+        exintro: true,
+        explaintext: true,
+      });
+
+      return $http({
+        url: url,
+        method: 'jsonp'
+      }).then(function(results) {
+        return results.data;
+      });
+    };
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This code will make a query for all titles contained in the passed in array.  It will grab an image of size 500, or closest, and the extract parsed into a string.  Redirects is set to &lt;code&gt;true&lt;/code&gt; so if the title leads to a redirect, the redirect article will be sent.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Tie it All Together&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;So toss that little factory in there and you're good to go querying Wikipedia to your app's heart's content!  Beware that the data that comes back is organized based on the Wiki page id, so you'll have to do a little digging to get at the good stuff.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;angular.module('angularApp')  
+  .factory('wikiFactory', function($http) {
+
+    var wikiUrl = "http://en.wikipedia.org/w/api.php?action=query&amp;amp;format=json&amp;amp;callback=JSON_CALLBACK";
+
+    var buildQuery = function(obj) {
+      var url = wikiUrl;
+      for (var key in obj) {
+        url += '&amp;amp;' + key + '=' + obj[key];
+      }
+      return url;
+    };
+
+    var getWiki = function(titles) {
+      var url = buildQuery({
+        titles: titles.join('|'),
+        prop: "pageimages|extracts",
+        pithumbsize: 500,
+        redirects: true,
+        exintro: true,
+        explaintext: true,
+      });
+
+      return $http({
+        url: url,
+        method: 'jsonp'
+      }).then(function(results) {
+        return results.data;
+      });
+    };
+
+    return {
+      getWiki: getWiki
+    }
+  });
+&lt;/code&gt;&lt;/pre&gt;</content:encoded></item><item><title>Growing a Trie in JS for Some Slick Word Searches</title><description>&lt;p&gt;A &lt;a href="https://en.wikipedia.org/wiki/Trie"&gt;trie&lt;/a&gt; is nifty little data structure that can be used to very quickly and efficiently check for the spelling of a word.  &lt;/p&gt;
+
+&lt;p&gt;A little mind exercise:  Imagine you're playing a very high stakes game of Scrabble against Grandma and Aunt Helen and you just can't bear to be beaten&lt;/p&gt;</description><link>http://localhost:2368/growing-a-trie-in-js-for-some-slick-word-searches/</link><guid isPermaLink="false">3cfff344-8396-4b85-b5fb-44fe24621a59</guid><dc:creator>Alex Zywiak</dc:creator><pubDate>Wed, 04 Nov 2015 04:13:49 GMT</pubDate><content:encoded>&lt;p&gt;A &lt;a href="https://en.wikipedia.org/wiki/Trie"&gt;trie&lt;/a&gt; is nifty little data structure that can be used to very quickly and efficiently check for the spelling of a word.  &lt;/p&gt;
+
+&lt;p&gt;A little mind exercise:  Imagine you're playing a very high stakes game of Scrabble against Grandma and Aunt Helen and you just can't bear to be beaten again.  So, you do what any other good Dev would do, and write a computer program to do the heavy lifting for you.  &lt;/p&gt;
+
+&lt;p&gt;Assuming you have all the permutations of the letters passed into your program, how would you check which ones were valid super high scoring words?  Comparing each against a list of dictionary words would be prohibitively slow and Aunt Helen would quickly become suspicious.&lt;/p&gt;
+
+&lt;p&gt;That's where the &lt;code&gt;trie&lt;/code&gt; structure comes in.  A trie is composed of linked nodes which each hold a value, in this case a letter, and links to &lt;em&gt;any subsequent letters that would continue to from a valid word&lt;/em&gt;. In this case, the nodes will also hold a property letting us know if that node represents the end of a valid word, so we know when to stop looking. &lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Essence of a Trie&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;For example, the word &lt;strong&gt;tea&lt;/strong&gt; (a paltry 3 points, I know) would be composed of four nodes.  The root node up at the top is the point of all departure.  It hold references to all the possible &lt;em&gt;first&lt;/em&gt; letters of any words (in the diagrams case, t, A and i).  To check if the word &lt;strong&gt;tea&lt;/strong&gt; exists in the list, we would first look at the root node for a reference to any &lt;strong&gt;t&lt;/strong&gt; child nodes.  In this case there is one, so we check the &lt;strong&gt;t&lt;/strong&gt; node for a reference to &lt;strong&gt;e&lt;/strong&gt;, the second letter in our word.  That exists, as does a subsequent reference to &lt;strong&gt;a&lt;/strong&gt;.  Once we reach the last letter in our word, we will have to check to see if the final node corresponds to an entire word.  If it does, we know we have a match!&lt;/p&gt;
+
+&lt;p&gt;&lt;img src="http://localhost:2368/content/images/2015/10/trie.png" alt="Trie diagram courtesy of Wikipedia"&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Show Me the Code, Bro&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;OK, that's some lovely CS101 fluffiness, but how do we do something with it.  JS can nicely model a Trie structure using Objects.&lt;/p&gt;
+
+&lt;p&gt;The basic object will have a letter property, corresponding to the &lt;code&gt;letter&lt;/code&gt; that node represents, and an &lt;code&gt;isWord&lt;/code&gt; property which will be set to &lt;code&gt;true&lt;/code&gt; if that node represents the end of a complete word.  Letter also defaults to and empty string to represent the root node in the Trie.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javasript"&gt;var Trie = function(letter) {  
+  this.letter = letter || '';
+  this.isWord = false;
+};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Where it really gets good is inserting new words into our Trie structure.  To do that we'll add an insert method to the &lt;code&gt;Trie.prototype&lt;/code&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;// Adds a new word into the prefix tree
+Trie.prototype.insert = function(word) {  
+  var currentNode = this;
+  var newNode;
+  var ch;
+  // Loop through all the letters of the word to be inserted.
+  for (var i = 0; i &amp;lt; word.length; i++) {
+    ch = word.charAt(i);
+    // Check if the current node already has a property corresponding to the next letter
+    if (currentNode[ch]) {
+      // If it does have that letter already
+      // Move current node on to the next child node corresponding to next letter
+      currentNode = currentNode[ch];
+      // If Next letter node DOESN'T exists
+    } else {
+      // create a new child node for the next letter
+      // move current node on to the new node
+      newNode = new Trie(ch);
+      currentNode[ch] = newNode;
+      currentNode = newNode;
+    }
+    // When the last letter is reached, set the current node's 
+    // isWord property to true to represent the end of a complete
+    // word.
+    if (i === word.length - 1) {
+      currentNode.isWord = true;
+    }
+  }
+};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This method will take in a &lt;code&gt;word&lt;/code&gt; parameter and will insert it into our Trie.  To do that, it will loop over each letter in the new word, represented as &lt;code&gt;ch&lt;/code&gt;, moving down the trie as it goes.  To model the connections, we simply use properties on the &lt;code&gt;Trie&lt;/code&gt; object with the letter as the key name and the next node as the value.  &lt;/p&gt;
+
+&lt;p&gt;Using the diagram above as an example, that root node would look like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;{ 
+  t: Trie,
+  A: Trie,
+  i: Trie,
+  isWord: false,
+  letter: ''
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Starting at the root node as the first value for &lt;code&gt;currentNode&lt;/code&gt;, it will check if there is a property corresponding to the first letter in the word.  If that property already exists, we'll set it as &lt;code&gt;currentNode&lt;/code&gt; and move on to the next letter.  If it doesn't exist, we'll create a new &lt;code&gt;Trie&lt;/code&gt; object with its letter property set to &lt;code&gt;ch&lt;/code&gt;, set it as &lt;code&gt;currentNode&lt;/code&gt; and move on to the next letter.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;    if (currentNode[ch]) {
+      // If it does have that letter already
+      // Move current node on to the next child node corresponding to next letter
+      currentNode = currentNode[ch];
+      // If Next letter node DOESN'T exists
+    } else {
+      // create a new child node for the next letter
+      // move current node on to the new node
+      newNode = new Trie(ch);
+      currentNode[ch] = newNode;
+      currentNode = newNode;
+    }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Finally, we'll add a check to set the &lt;code&gt;isWord&lt;/code&gt; property to &lt;code&gt;true&lt;/code&gt; when we've reached the last letter.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;// When the last letter is reached, set the current node's 
+    // isWord property to true to represent the end of a complete
+    // word.
+    if (i === word.length - 1) {
+      currentNode.isWord = true;
+    }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;To make use of the insert function, we'll create a new instance of a &lt;code&gt;Trie&lt;/code&gt;, which will represent our root node, and then we can drop in words to our heart's content.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;var trie = new Trie();  
+trie.insert('crepuscular');  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The &lt;code&gt;insert&lt;/code&gt; method will allow us to build out a structure similar to the diagram above.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;What Goes in Must Come Out&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Great, we can add words, but how do we know what's in there?&lt;/p&gt;
+
+&lt;p&gt;To search through the existing words, we'll need another method.  We'll create a &lt;code&gt;contains&lt;/code&gt; method which will take a string as an argument.  It will search through the trie and return a boolean value representing if the string is a word in the trie or not.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;Trie.prototype.contains = function(str) {  
+  var currentNode = this;
+  var ch;
+
+  // Loop through each letter in the string
+  for (var i = 0; i &amp;lt; str.length; i++) {
+    ch = str.charAt(i);
+    // Check if the current node has a link to that letter
+    if (!currentNode[ch]) {
+      // If it doesn't, str isn't a valid word so return false
+      return false;
+    } else {
+      // If it is a valid letter, move on to the next node.
+      currentNode = currentNode[ch];
+    }
+    // If we reach the end of the string and the current node
+    // represents a complete word, return true.
+    if (i === str.length - 1 &amp;amp;&amp;amp; currentNode.isWord) {
+      return true;
+    }
+  }
+  // If we reach the end of the string, but it's not a complete
+  // word, return false.
+  return false;
+};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now we can check if our trie structure contains a given word.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;var trie = new Trie();  
+trie.insert('crepuscular');  
+trie.insert('hirsute');  
+trie.insert('cheese');
+
+trie.contains('cheese') // ---&amp;gt; true  
+trie.contains('chee'); // ---&amp;gt; false  
+trie.contains('askldf'); // ---&amp;gt; really false  
+trie.contains('tubular'); // ---&amp;gt; false because we didn't add it yet  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;What Next&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;So we have trie, but we're not that much closer to having something that can help us school Grandma in Scrabble.  The trie is a necessary step though.  In order to find all possible scrabble words, we have to test all permutations of seven letters.  That's a lot of look ups! Although a trie needs a considerable amount of time to preprocess all the words in the dictionary, when that's complete we have the ability to check if a string is a valid word &lt;strong&gt;with constant time look up!&lt;/strong&gt;  Instead of looping through the entire dictionary to check each word, we only have to look at as many nodes as letters in the string.  &lt;/p&gt;
+
+&lt;p&gt;Next up, I'll go over an algorithm that will find and test all combinations of letters in a Scrabble hand.&lt;/p&gt;</content:encoded></item><item><title>Modelling Collision Detection in D3 with tween functions.</title><description>&lt;p&gt;Despite being named after a terribly awkward developmental stage, &lt;code&gt;tween&lt;/code&gt; functions can let you do some really cool stuff in d3.&lt;/p&gt;
+
+&lt;p&gt;The tween function is run on an element during a d3 transition.  It allows you to register a custom function that will be run at every increment between the&lt;/p&gt;</description><link>http://localhost:2368/modelling-collision-detection-in-d3/</link><guid isPermaLink="false">e66640a4-0304-4528-878f-81b962b6431c</guid><dc:creator>Alex Zywiak</dc:creator><pubDate>Sat, 31 Oct 2015 15:47:37 GMT</pubDate><content:encoded>&lt;p&gt;Despite being named after a terribly awkward developmental stage, &lt;code&gt;tween&lt;/code&gt; functions can let you do some really cool stuff in d3.&lt;/p&gt;
+
+&lt;p&gt;The tween function is run on an element during a d3 transition.  It allows you to register a custom function that will be run at every increment between the two poles of that transition and get reference to the precise attributes of the element each step of the way.  &lt;/p&gt;
+
+&lt;p&gt;I came across tween functions to model collision detection when I was trying to implement a rudimentary Asteroids clone.  For this example, I'll boil it down a little more, and use a custom tween function to determine when to randomly moving circles intersect each other.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Set Up d3&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;To get things going we're going to set up the &lt;code&gt;svg&lt;/code&gt; element and append it.  We'll also add some data for d3 to join for some sweet circles.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;  var svg = d3.select('#container')
+    .append('svg')
+    .attr('height', 600)
+    .attr('width', 1000);
+
+  var data = ['blue', 'purple'];
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Set Up Animation&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Next up, we're going to set up a simple animation to have our circles bounce around between random points on the screen.  We'll chain the animations by calling &lt;code&gt;.each('end', move)&lt;/code&gt; to re-call the &lt;code&gt;move&lt;/code&gt; function when the original transition is completed.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;  var move = function() {
+    var circles = svg.selectAll('circle')
+      .data(data);
+
+    circles.enter()
+      .append('circle')
+
+    var circleAttrs = circles
+      .transition()
+      .duration(1000)
+      .attr('cx', function(d) {
+        return Math.floor(Math.random() * 1000);
+      })
+      .attr('cy', function(d) {
+        return Math.floor(Math.random() * 600);
+      })
+      .attr('r', 100)
+      .attr('fill', function(d) {
+        return d;
+      })
+      .tween('collision', collisionDetection)
+      .each('end', move);
+  };
+
+  move();
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Enter Tween Function&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Notice right before the final call to &lt;code&gt;.each&lt;/code&gt;, we add our tween function.  The first argument is the name the tween function is registered for, and the second argument is a factory function that will return a function to be run on all the increments between the start and the end of the transition.&lt;/p&gt;
+
+&lt;p&gt;The factory function passed to &lt;code&gt;tween&lt;/code&gt; must &lt;strong&gt;return a function&lt;/strong&gt;.  It's also possible to take advantage of the closure nature of the factory function to preserve and reference any information from the start of the transition.&lt;/p&gt;
+
+&lt;p&gt;Our factory function, &lt;code&gt;collisionDetection&lt;/code&gt; will return a function that will grab all other present circles using &lt;code&gt;d3.select&lt;/code&gt;, and using some slick 8th grade Pythagorean algebra, determine the distance between our circle and any others.  If the calculated distance is less than the sum of their two radii, we'll consider them collided.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;var collisionDetection = function() {  
+    return function() {
+      var thisCircle = d3.select(this);
+
+      d3.select('circle').each(function() {
+        var otherCircle = d3.select(this);
+
+        if (thisCircle.datum() !== otherCircle.datum()) {
+
+          dx = thisCircle.attr('cx') - otherCircle.attr('cx'),
+            dy = thisCircle.attr('cy') - otherCircle.attr('cy'),
+            distance = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+
+          if (distance &amp;lt; +thisCircle.attr('r') + +otherCircle.attr('r')) {
+            collision(thisCircle, otherCircle);
+          }
+        }
+      });
+    };
+  };
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;In this example, on a collision it will call a collision function passing in the two offending circles.  Throw in a quick &lt;code&gt;console.log&lt;/code&gt; to see what's going on.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;  var collision = function(thisCircle, otherCircle) {
+    console.log('Collision at: ' + thisCircle.attr('cx') + ',' + thisCircle.attr('cy'));
+  }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;tween&lt;/code&gt; functions give you a lot of room to play around when using transitions in d3.  Check out the &lt;a href="https://github.com/mbostock/d3/wiki/Transitions#attrTween"&gt;documentation&lt;/a&gt; and make some sweet stuff.&lt;/p&gt;</content:encoded></item><item><title>Audio Visualiser Using D3</title><description>&lt;p&gt;D3 isn't just for squares with their pie charts and bar graphs anymore.  D3 can be totally Rock 'n Roll, man!  And to prove that to all you naysayers, we'll go ahead and build a sweet rockin' audio visualiser right in our browser.&lt;/p&gt;
+
+&lt;p&gt;Or, if you prefer, cut to the&lt;/p&gt;</description><link>http://localhost:2368/audio-visualiser-using-d3/</link><guid isPermaLink="false">a9984624-d736-432f-8dc4-d0d584f213c1</guid><dc:creator>Alex Zywiak</dc:creator><pubDate>Sat, 24 Oct 2015 21:43:46 GMT</pubDate><content:encoded>&lt;p&gt;D3 isn't just for squares with their pie charts and bar graphs anymore.  D3 can be totally Rock 'n Roll, man!  And to prove that to all you naysayers, we'll go ahead and build a sweet rockin' audio visualiser right in our browser.&lt;/p&gt;
+
+&lt;p&gt;Or, if you prefer, cut to the chase and check out the full code on Github &lt;a href="https://github.com/alexzywiak/d3-Audio-Visualiser"&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Set Up index.html&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;To get at some tunes, I'm going to use an HTML5 &lt;code&gt;audio&lt;/code&gt; tag with &lt;code&gt;id=player&lt;/code&gt; right in &lt;code&gt;index.html&lt;/code&gt; and just source the audio from a local file.  We can also tack on a &lt;code&gt;div&lt;/code&gt; with and &lt;code&gt;id="visualiser"&lt;/code&gt; for housing our visualiser.  Make sure to load up &lt;code&gt;d3&lt;/code&gt; and &lt;code&gt;jQuery&lt;/code&gt; while you're at it too!  &lt;/p&gt;
+
+&lt;p&gt;If you're using a local audio file, you need to set up a localhost server and not just open the html file directly from your browser. Without a local server, you'll get a &lt;a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS"&gt;CORS Access Restriction&lt;/a&gt; error when you try and run the visualiser!&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Grabbing the AudioContext()&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Next, we're going create an &lt;a href="https://developer.mozilla.org/en-US/docs/Web/API/AudioContext"&gt;AudioContext&lt;/a&gt; object, &lt;code&gt;context&lt;/code&gt;, so we can get at all those sweet frequencies.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;$(function(){
+    var context = new AudioContext();
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Create an AnalyserNode&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;We'll use the &lt;a href="https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/createAnalyser"&gt;createAnalyser&lt;/a&gt; method on the &lt;code&gt;context&lt;/code&gt; object to create an &lt;a href="https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode"&gt;AnalyserNode&lt;/a&gt;, &lt;code&gt;analyser&lt;/code&gt;, that will provide us with the real time frequency data we're looking for.&lt;/p&gt;
+
+&lt;p&gt;Then we'll set what essentially amounts to the resolution of our &lt;code&gt;analyser&lt;/code&gt; object by setting its &lt;code&gt;fftSize&lt;/code&gt; property.  The &lt;code&gt;fftSize&lt;/code&gt; must be a power of 2 for some mathematically magical reason. The higher the resolution, the sharper the visualiser, but we'll end up animating animating exponentially more elements which can take a toll.  I've found that 512 to 1024 is a good balance between resolution and performance, but feel free to play around with it and see what you can do.  &lt;/p&gt;
+
+&lt;p&gt;Finally, we'll create a &lt;code&gt;frequencyData&lt;/code&gt; array which is what we'll ultimately pass as data to d3 to power our visualisation.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;$(function() {
+    var context = new AudioContext();
+    var analyser = context.createAnalyser();
+    analyser.fftSize = 64;
+    var frequencyData = new Uint8Array(analyser.frequencyBinCount);
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Connect Our Analyser&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Next up, we have to route our tunes through our &lt;code&gt;analyser&lt;/code&gt;.  Using &lt;code&gt;jQuery&lt;/code&gt;, we're going to grab the &lt;code&gt;audio&lt;/code&gt; HTML tag we're listening to.  We'll pass the &lt;code&gt;audio&lt;/code&gt; tag element to the &lt;code&gt;context.createMediaElementSource&lt;/code&gt; method  and set it as our &lt;code&gt;source&lt;/code&gt;.  That will allow us to get the frequency data.  We'll connect our &lt;code&gt;analyser&lt;/code&gt; to the audio &lt;code&gt;source&lt;/code&gt;, and then finally, connect our &lt;code&gt;analyser&lt;/code&gt; to &lt;code&gt;context.destination&lt;/code&gt;, in normal parlance, you speakers, so that we can once again hear the music. Check out the &lt;a href="https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode"&gt;AnaylserNode&lt;/a&gt; and &lt;a href="https://developer.mozilla.org/en-US/docs/Web/API/AudioContext"&gt;AudioContext&lt;/a&gt; docs for more info on what ever the hell's going on here.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;$("#player").bind('canplay', function() {
+        var source = context.createMediaElementSource(this);
+        source.connect(analyser);
+        analyser.connect(context.destination);
+    });
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Our &lt;code&gt;analyser&lt;/code&gt; is all wired up to report back to us with real time info on what's playing.  To get an updated array of the frequency values, all we need to do is run &lt;code&gt;analyser.getByteFrequencyData(frequencyData)&lt;/code&gt; and the &lt;code&gt;frequencyData&lt;/code&gt; array we declared earlier, will get updated. &lt;/p&gt;
+
+&lt;p&gt;To check it out, run a little &lt;code&gt;console.log&lt;/code&gt; action.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;setInterval(function(){  
+  analyser.getByteFrequencyData(frequencyData);
+  console.log(frequencyData)
+}, 500);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Once the music starts playing, you should see all kinds of numbers dancing around in the console.  Unfortunately, that's only exciting for us geeky dev types.  We'll have to up our game to get the groupies.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Visualise It&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;A constantly changing array of numbers!  D3 is all over that!  Let's set up an &lt;code&gt;svg&lt;/code&gt; element to hold our sweet visuals.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;var width = 800,  
+        height = 600,
+        barPadding = 0;
+
+    var svg = d3.select('#visualiser')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;We'll create an ever so basic bar graph in d3 bound to the frequency information.  This visualiser is as basic as they get, but d3 has so much awesomeness, your imagination is the limit.  &lt;/p&gt;
+
+&lt;p&gt;Since we're going to be continuously updating our graph with the real time frequency data, we'll wrap drawing the graph in an &lt;code&gt;update&lt;/code&gt; function.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;    var update = function(data) {
+
+        rect = svg.selectAll('rect')
+            .data(data)
+
+        rect.enter().append('rect');
+
+        rect.attr('width', function() {
+                return width / data.length - barPadding;
+            })
+            .attr('height', function(d) {
+                return d * 1000;
+            })
+            .attr('x', function(d, i) {
+                return i * width / data.length;
+            })
+            .attr('y', function(d) {
+                return height - d;
+            })
+            .attr('fill', function(d) {
+                return "rgb(0, 0, " + (d * 10) + ")";
+            });
+    };
+
+update(frequencyData);  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Lastly, we'll make use of &lt;code&gt;d3.timer()&lt;/code&gt; to run continuously run our animation.  We also have to make sure and call &lt;code&gt;analyser.getByteFrequencyData(frequencyData)&lt;/code&gt; so that we get real time audio data.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;d3.timer(function() {  
+        analyser.getByteFrequencyData(frequencyData);
+        update(frequencyData);
+    });
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;And now, you only have one more question to answer.  Are you ready to Rock?  &lt;/p&gt;
+
+&lt;p&gt;I'm such a nerd...&lt;/p&gt;
+
+&lt;p&gt;Full code up on &lt;a href="https://github.com/alexzywiak/d3-Audio-Visualiser"&gt;Git&lt;/a&gt;.&lt;/p&gt;</content:encoded></item><item><title>Animating Keyboard Events in d3</title><description>&lt;p&gt;d3 can do some serious data, but it is also a pretty sweet tool to animate user input.  &lt;/p&gt;
+
+&lt;p&gt;I'll give a little run through here on how to capture keyboard events to run a little animation.  Well, to drive a little triangle around the screen using the arrow keys. &lt;br&gt;
+&lt;br&gt; &lt;br&gt;
+&lt;strong&gt;Set&lt;/strong&gt;&lt;/p&gt;</description><link>http://localhost:2368/animating-keyboard-events-in-d3/</link><guid isPermaLink="false">764c6964-9c31-4a36-9e44-c95b4aec3a95</guid><dc:creator>Alex Zywiak</dc:creator><pubDate>Sun, 18 Oct 2015 23:24:20 GMT</pubDate><content:encoded>&lt;p&gt;d3 can do some serious data, but it is also a pretty sweet tool to animate user input.  &lt;/p&gt;
+
+&lt;p&gt;I'll give a little run through here on how to capture keyboard events to run a little animation.  Well, to drive a little triangle around the screen using the arrow keys. &lt;br&gt;
+&lt;br&gt; &lt;br&gt;
+&lt;strong&gt;Set Up SVG&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;First, we need an element to hold our d3 goodness, so we'll append an &lt;code&gt;svg&lt;/code&gt; element onto the body and set its default dimensions.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;var svg = d3.select('body')  
+  .append('svg')
+  .attr('height', 600)
+  .attr('width', 1000);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Next, we'll add in a triangle polygon that will eventually be controlled by the arrow keys.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;var triangle = svg.append('polygon')  
+  .attr('fill', 'yellow')
+  .attr('stroke', 'blue')
+  .attr('stroke-width', 2)
+  .attr('points', "0, 30 0, 0 40, 15 ");
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;We have a little yellow triangle, but it's stuck way up in the corner.  Let's start it out in the center of the svg element instead.  To make storing and referencing the triangles position easier, we'll add some relevant properties to the &lt;code&gt;triangle&lt;/code&gt; object using &lt;code&gt;underscore&lt;/code&gt;'s &lt;code&gt;extend&lt;/code&gt; method.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;_.extend(triangle, {  
+  x: 500,
+  y: 300,
+  angle: 0,
+  _speed: 10
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This sets the triangle's &lt;code&gt;x&lt;/code&gt; and &lt;code&gt;y&lt;/code&gt; values &lt;code&gt;500&lt;/code&gt; and &lt;code&gt;300&lt;/code&gt; respectively, or what is the middle of our current svg.  These coordinates are meaningless properties until we actually place the triangle using the &lt;code&gt;transform&lt;/code&gt; attribute provided to us by d3.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;triangle.attr('transform', function() {  
+  return 'translate(' + triangle.x + ',' + triangle.y + ')';
+})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;At this point, we have a pretty little triangle that is still tragically static.  Let's get our little tripartite friend moving! &lt;br&gt;
+&lt;br&gt; &lt;br&gt;
+&lt;strong&gt;Catching Key Events&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;The first thing we're going to do to get some movement, is to set up capturing keyboard events.  d3 has a very straightforward method to do so.  Unfortunately, it is only useful for catching single keys being pressed at a time.  We're going to expand it a little so we can react to multiple keys pressed at once, in this case to model diagonal movement.&lt;/p&gt;
+
+&lt;p&gt;To do so, we're going to put watchers on both the &lt;code&gt;keydown&lt;/code&gt; and &lt;code&gt;keyup&lt;/code&gt; events.  To store which keys are being pressed, we'll create an object &lt;code&gt;keyPressed&lt;/code&gt;.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;var keyPressed = {};
+
+d3.select('body')  
+  .on('keydown', function() {
+    keyPressed[d3.event.keyIdentifier] = true;
+  })
+  .on('keyup', function() {
+    keyPressed[d3.event.keyIdentifier] = false;
+  });
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;With this in place, every &lt;code&gt;keydown&lt;/code&gt; event will store that event's &lt;code&gt;keyIdentifier&lt;/code&gt; as the property name in the &lt;code&gt;keyPressed&lt;/code&gt; object and set its value to &lt;code&gt;true&lt;/code&gt;.  On a keydown event, the corresponding &lt;code&gt;keyIdentifier&lt;/code&gt; will reset it to &lt;code&gt;false&lt;/code&gt;.  With this setup, we can monitor all keys that are being pressed simultaneously. &lt;br&gt;
+&lt;br&gt; &lt;br&gt;
+&lt;strong&gt;Gettin' Our Move On&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;So far we have a stationary triangle and some code that tells me what buttons I'm pushing. Great.  Not too exciting yet, but we'll get there, I promise.&lt;/p&gt;
+
+&lt;p&gt;In order to set and manipulate our triangle's position, we're going to use the &lt;code&gt;transform/translate&lt;/code&gt; property of svg &lt;code&gt;polygons&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;We'll create a &lt;code&gt;moveTriangle&lt;/code&gt; function to monitor our keypresses and to change the triangle's &lt;code&gt;x&lt;/code&gt; and &lt;code&gt;y&lt;/code&gt; properties to appropriately respond to the arrow keys.  &lt;code&gt;moveTriangle&lt;/code&gt; will reference the &lt;code&gt;keyPressed&lt;/code&gt; object to find out what keys are currently being pressed.  We'll also add a helper function &lt;code&gt;isInBounds&lt;/code&gt; to make sure no one is flying off the screen.  (You may wonder how we're going to reference &lt;code&gt;keyPressed&lt;/code&gt; in real time, but don't worry, d3 will come through in the end.)  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;var moveTriangle = function() {
+
+  var x = triangle.x;
+  var y = triangle.y;
+
+  if (keyPressed['Left']) {
+    triangle.x = isInBounds(x - triangle._speed, 'width');
+  }
+  if (keyPressed['Up']) {
+    triangle.y = isInBounds(y - triangle._speed, 'height');
+  }
+  if (keyPressed['Right']) {
+    triangle.x = isInBounds(x + triangle._speed, 'width');
+  }
+  if (keyPressed['Down']) {
+    triangle.y = isInBounds(y + triangle._speed, 'height');
+  }
+  triangle.move(x, y);
+};
+
+var isInBounds = function(n, dimension) {  
+  if (n &amp;lt; 0) {
+    return 0;
+  } else if (n &amp;gt; svg.attr(dimension)) {
+    return svg.attr(dimension);
+  } else {
+    return n;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The &lt;code&gt;moveTriangle&lt;/code&gt; effectively translates the arrow keys into new &lt;code&gt;x&lt;/code&gt; and &lt;code&gt;y&lt;/code&gt; coordinates on the &lt;code&gt;triangle&lt;/code&gt; object, but again, we need to make use of &lt;code&gt;translate&lt;/code&gt; to actually move the triangle on the screen.  On the last line in &lt;code&gt;moveTriangle&lt;/code&gt; we reference a &lt;code&gt;move&lt;/code&gt; method on triangle.  Let's write that now.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;triangle.move = function(x, y) {  
+  var dx = this.x - x;
+  var dy = this.y - y;
+  if (dx !== 0 || dy !== 0) {
+    this.angle = 360 * (Math.atan2(dy, dx) / (Math.PI * 2));
+  }
+  triangle.attr('transform', function() {
+    return 'rotate(' + [this.angle, this.x + 20, this.y + 15].join() + ')' +
+      'translate(' + [this.x, this.y].join() + ')';
+  }.bind(this));
+};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Under the fancy trigonometry, this function's main purpose is to call d3's &lt;code&gt;attr&lt;/code&gt; method on our &lt;code&gt;triangle&lt;/code&gt; object and relay the appropriate position to the &lt;code&gt;translate&lt;/code&gt; attribute.  We also run some fancy math to keep track of where our triangle is pointing just to keep things interesting. &lt;br&gt;
+&lt;br&gt; &lt;br&gt;
+&lt;strong&gt;Animate!&lt;/strong&gt; &lt;br&gt;
+All this code is well and good, but it needs a final line of d3 magic to work.  As it stands, we keep track of what keys are pressed, but the &lt;code&gt;moveTriangle&lt;/code&gt; function isn't being called on! How will it know when the arrows are being pressed?  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;d3.timer(moveTriangle);  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Toss that little line in there, and have fun!  d3's &lt;code&gt;timer&lt;/code&gt; method will tie our &lt;code&gt;moveTriangle&lt;/code&gt; function smoothly into the internal gears and cogs of it's time keeping mechanisms.  It will now be run continuously and keep referencing the &lt;code&gt;keyPressed&lt;/code&gt; object for an updated look at which keys the user is pressing and then appropriately telling our little yellow triangle where to go.&lt;/p&gt;</content:encoded></item><item><title>Setting Up Sublime Linter in Sublime Text 3</title><description>&lt;p&gt;Syntax errors suck.  They're pretty much like the worst.  We've all been there.  You have a moment of transcendental inspiration, you hack out some of the most erudite, lucid code you've ever created, hit save, and wait for the fruits of your flawless genius to unfold.  But then everything comes&lt;/p&gt;</description><link>http://localhost:2368/setting-up-sublime-linter-in-sublime-text-3/</link><guid isPermaLink="false">42911685-2cd7-4bc9-bc52-06e8bd4289cc</guid><dc:creator>Alex Zywiak</dc:creator><pubDate>Thu, 15 Oct 2015 17:09:18 GMT</pubDate><content:encoded>&lt;p&gt;Syntax errors suck.  They're pretty much like the worst.  We've all been there.  You have a moment of transcendental inspiration, you hack out some of the most erudite, lucid code you've ever created, hit save, and wait for the fruits of your flawless genius to unfold.  But then everything comes crashing down around you like a flaming house of cards hitting a fan, or something roughly equivalent.  The culprit?  Some misplaced comma on line 238 that takes you an hour and half to find.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Enter Sublime Linter&lt;/strong&gt;.  Catch those malevolent little errors before they illicit any hair pulling.  &lt;/p&gt;
+
+&lt;p&gt;Installation is simple, but has a few steps.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step One - Install SublimeLinter Package&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;If you have Package Manager installed on Sublime &lt;code&gt;cmd + shift + p&lt;/code&gt; and open that sucker up.  &lt;/p&gt;
+
+&lt;p&gt;(If you don't, time to get out from under the Subliminal Rock &lt;a src="https://packagecontrol.io/"&gt;packagemanager.io&lt;/a&gt;)  &lt;/p&gt;
+
+&lt;p&gt;Got to: &lt;code&gt;Package Control: Install Package --&gt; SublimeLinter&lt;/code&gt; and install it.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step Two - Install Linters&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;SublimeLinter alone, as the Package Control Messages page emphatically states, doesn't do anything.  In order to get at the lintfree goodness that is clean code, you have to install language specific linters first.&lt;/p&gt;
+
+&lt;p&gt;In this case, we'll go ahead and install jshint to act as our linter.&lt;/p&gt;
+
+&lt;p&gt;Back in package manager: &lt;code&gt;Package Control: Install Package --&gt; SublimeLinter-jshint&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;On the new Package Control Messages Page, at the bottom you will have a new section referring specifically to jshint.  &lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step Three - Install jshint node package&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;We're getting there, one more step to get this working!  jshint makes use of a Node package that must be installed separately on your machine.&lt;/p&gt;
+
+&lt;p&gt;If you have &lt;code&gt;node&lt;/code&gt; and &lt;code&gt;npm&lt;/code&gt; on your computer already, run the following command to install jshint globally so SublimeLinter can get at it.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;npm install -g jshint&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;If you have no idea what this node stuff is all about, check out more detailed instructions here. &lt;br&gt;
+&lt;a src="https://github.com/SublimeLinter/SublimeLinter-jshint"&gt;https://github.com/SublimeLinter/SublimeLinter-jshint&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;At this point you should be up and running!  Head into a .js file in Sublime, type out the most heinous syntax errors you can think of, and bask in their yellow outlined ostracism!  &lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step Four - Changing JShint Configuration&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;So you're psyched, your totally free of unwanted lintyness, but your JSHint isn't playing nice with jQuery.  It especially doesn't like '$' which, it correctly although rather narrowly, tells you is not defined.  &lt;/p&gt;
+
+&lt;p&gt;To change the linting configuration, you need to add a file called &lt;code&gt;.jshintrc&lt;/code&gt; into your project folder. &lt;/p&gt;
+
+&lt;p&gt;The file allows you to use object notation to customize the way Jshint works.  For example, to stop any errors on the jQuery '$' object, enter  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;{  
+  "globals": {
+      "$": false
+  }
+}&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;For your reference, here is a full list of options that can be modified in the &lt;code&gt;.jshintrc&lt;/code&gt; file.&lt;/p&gt;
+
+&lt;p&gt;&lt;a src="http://jshint.com/docs/options/"&gt;http://jshint.com/docs/options/&lt;/a&gt;&lt;/p&gt;</content:encoded></item><item><title>In a .bind about how to .apply .call?</title><description>&lt;p&gt;You can really tell the True JS Ninjas from the Codeacademicians when it comes to proper use of &lt;code&gt;.call()&lt;/code&gt;, &lt;code&gt;.apply()&lt;/code&gt;, and &lt;code&gt;.bind()&lt;/code&gt;.  &lt;/p&gt;
+
+&lt;p&gt;All three are methods available on the JS &lt;code&gt;function&lt;/code&gt; prototype and are used to &lt;strong&gt; reassign the value of &lt;code&gt;this&lt;/code&gt; within the calling function.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;The three functions differ in&lt;/p&gt;</description><link>http://localhost:2368/in-a-bind-about-how-apply-call/</link><guid isPermaLink="false">e806b939-3b5f-4e75-9843-96ae903a86e1</guid><dc:creator>Alex Zywiak</dc:creator><pubDate>Mon, 12 Oct 2015 00:08:39 GMT</pubDate><content:encoded>&lt;p&gt;You can really tell the True JS Ninjas from the Codeacademicians when it comes to proper use of &lt;code&gt;.call()&lt;/code&gt;, &lt;code&gt;.apply()&lt;/code&gt;, and &lt;code&gt;.bind()&lt;/code&gt;.  &lt;/p&gt;
+
+&lt;p&gt;All three are methods available on the JS &lt;code&gt;function&lt;/code&gt; prototype and are used to &lt;strong&gt; reassign the value of &lt;code&gt;this&lt;/code&gt; within the calling function.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;The three functions differ in how they accept arguments, in the case of &lt;code&gt;.call()&lt;/code&gt; and &lt;code&gt;.apply()&lt;/code&gt;, and whether they invoke the function or return a new function, as in the case of &lt;code&gt;.bind()&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;As with all things code, it is much easier to explain in an example.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;var homer = {  
+    name: 'Homer',
+    catchPhrase : 'D\'Oh!',
+    activity : function(){
+      console.log('Mmmm ' + this.name + ' likes Duff!');
+    }
+};
+
+var barney = {  
+    name: 'Barney',
+    catchPhrase : 'Buuuuurp!'
+};
+
+var speak = function(greeting1, greeting2){  
+    greeting = greeting1 + greeting2 || '';
+    console.log(greeting + this.catchPhrase);
+};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;As you can see, Homer and Barney are gregarious guys.  They need to be able to speak!  But, oh no!  &lt;code&gt;speak()&lt;/code&gt; is not a native function to either of them!  &lt;code&gt;this.catchphrase&lt;/code&gt; is doomed to be &lt;code&gt;undefined!&lt;/code&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;speak() ==&amp;gt; undefined  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;.call()&lt;/strong&gt; &lt;br&gt;
+&lt;code&gt;.call(context, arg1, arg2...)&lt;/code&gt; &lt;br&gt;
+The first argument that &lt;code&gt;.call()&lt;/code&gt; accepts will be what is bound to the &lt;code&gt;this&lt;/code&gt; keyword inside the function.&lt;/p&gt;
+
+&lt;p&gt;Here, &lt;code&gt;homer&lt;/code&gt; is passed as the first argument to &lt;code&gt;.call()&lt;/code&gt; and so &lt;code&gt;homer&lt;/code&gt; becomes bound as &lt;code&gt;this&lt;/code&gt; within the &lt;code&gt;speak()&lt;/code&gt; function.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;speak.call(homer) ==&amp;gt; "D'Oh!"  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Subsequent arguments can be passed into &lt;code&gt;.call()&lt;/code&gt; and they will be passed to the calling function.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;speak.call(homer, 'Hi, Marge! ', ' Hi, Barney! ') ==&amp;gt; "Hi, Marge! Hi, Barney! D'Oh!"  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;.apply()&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;.apply(context, [arg list])&lt;/code&gt; &lt;br&gt;
+&lt;code&gt;.apply()&lt;/code&gt; works in almost the same way as &lt;code&gt;.call()&lt;/code&gt;.  The only difference between the two is the type of arguments they accept.  &lt;code&gt;.apply()&lt;/code&gt; will accept a single array or array-like object containing all of the arguments to be passed, whereas &lt;code&gt;.call()&lt;/code&gt; accepts a comma separated list.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;speak.apply(barney, ['Hi Moe! ', 'Hey Homer!']); ==&amp;gt; "Hi Moe! Hey Homer! Buuuuurp!"  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Notice how the values in the array object passed into &lt;code&gt;.apply()&lt;/code&gt; will be passed in order as the parameters to the calling function.&lt;/p&gt;
+
+&lt;p&gt;The real place these function methods shine through is you can call non-native methods bound to different objects without having to set them as properties on those objects.&lt;/p&gt;
+
+&lt;p&gt;Homer loves drinking beer.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;var homer = {  
+    name: 'Homer',
+    catchPhrase : 'D\'Oh!',
+    drinkBeer : function(){
+      console.log('Mmmm ' + this.name + ' likes Duff!');
+    }
+};
+
+homer.drinkBeer(); ===&amp;gt; "Mmmm Homer likes Duff!"  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;But Barney loves drinking beer, too!  But he doesn't have a &lt;code&gt;.drinkBeer()&lt;/code&gt; method. How can Homer share his favorite activity?&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;homer.drinkBeer.call(barney); ===&amp;gt; "Mmmm Barney likes Duff!"  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The same function is called, &lt;code&gt;homer.drinkBeer()&lt;/code&gt;, but by using &lt;code&gt;.call()&lt;/code&gt; we can change the context to bind &lt;code&gt;this&lt;/code&gt; to &lt;code&gt;barney&lt;/code&gt; instead.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;.bind()&lt;/strong&gt; &lt;br&gt;
+&lt;code&gt;.bind(context, arg1, arg2....)&lt;/code&gt; &lt;br&gt;
+&lt;code&gt;.bind()&lt;/code&gt; has a similar function, but works in a fundamentally different way.  &lt;code&gt;.apply()&lt;/code&gt; and &lt;code&gt;.call()&lt;/code&gt; both &lt;em&gt;invoke&lt;/em&gt; the calling function when they are called.  &lt;code&gt;.bind()&lt;/code&gt; &lt;strong&gt;returns a function reference&lt;/strong&gt; with the &lt;code&gt;this&lt;/code&gt; keyword properly bound.&lt;/p&gt;
+
+&lt;p&gt;When Homer and Barney are at Moe's Tavern, they rarely stop at one.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;var getDrunk = function(cb){  
+    for(var i = 0; i &amp;lt; 6; i++){
+        cb();
+    }
+};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;.getDrunk()&lt;/code&gt; accepts a callback and runs it six times.  Sounds like a good way to &lt;code&gt;.drinkBeer()&lt;/code&gt;!&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;getDrunk(homer.drinkBeer); ===&amp;gt; "Mmmm Homer likes Duff!"...x6  
+getDrunk(homer.drinkBeer.call(barney)); ===&amp;gt; undefined...x6  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;.call()&lt;/code&gt; and &lt;code&gt;.apply()&lt;/code&gt; invoked the function when they are called and don't return anything so they cannot be used when a function reference is required.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;.bind()&lt;/code&gt; will return a reference to a new function with the&lt;code&gt;this&lt;/code&gt; keyword context properly bound.  It accepts additional arguments the same way as &lt;code&gt;.call()&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Huh... &lt;br&gt;
+&lt;code&gt;fn.bind(context, arg1, arg2....)&lt;/code&gt; will return the following function.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;function(){  
+  return fn.call(context, arg1, arg2....);
+};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;So Barney can get cranked at Moe's too!  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;getDrunk(homer.drinkBeer.bind(barney); ===&amp;gt; "Mmmm Barney likes Duff!"...x6  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;.bind()&lt;/code&gt; acts as a closure, so it will create a new function and return a reference to it.  If you need to use that bound function multiple times, you can save it as a variable with all the properly bound &lt;code&gt;this&lt;/code&gt; goodness you could want.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code class="language-javascript"&gt;var drinkBeerBarney = homer.drinkBeer.bind(barney);
+
+typeof drinkBeerBarney ===&amp;gt; 'function'
+
+getDrunk(drinkBeerBarney); ===&amp;gt; "Mmmm Barney likes Duff!"...x6  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;So hopefully that will move you on your way toward some JS function binding context-fu mastery.  At least it should give you a hankering for a beer, so my job is done.&lt;/p&gt;</content:encoded></item><item><title>Setting Tab/Space Standards in Sublime Text</title><description>&lt;p&gt;An analogy for you; Properly indented code is to mixed spaces and tabs as  Oxford's English Dictionary is to a horde of tasmanian devils in a swimming pool full of scrabble letters.  &lt;/p&gt;
+
+&lt;p&gt;Yeah, properly indenting code is important.  It may look pretty in your editor, but on git or elsewhere&lt;/p&gt;</description><link>http://localhost:2368/setting-tab-space-standards-in-sublime-text/</link><guid isPermaLink="false">3e378150-39fe-414c-8a74-d32902fc2473</guid><dc:creator>Alex Zywiak</dc:creator><pubDate>Fri, 09 Oct 2015 21:13:33 GMT</pubDate><content:encoded>&lt;p&gt;An analogy for you; Properly indented code is to mixed spaces and tabs as  Oxford's English Dictionary is to a horde of tasmanian devils in a swimming pool full of scrabble letters.  &lt;/p&gt;
+
+&lt;p&gt;Yeah, properly indenting code is important.  It may look pretty in your editor, but on git or elsewhere out in the real world, it could look like a tangled mess if you're not consistent.&lt;/p&gt;
+
+&lt;p&gt;I'm going to cover how to change the default tab settings in Sublime.&lt;/p&gt;
+
+&lt;p&gt;To get going, navigate over to: &lt;br&gt;
+&lt;strong&gt;Sublime Text &gt; Preferences &gt; Settings - User&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Settings in Sublime are controlled using JSON notation.  &lt;/p&gt;
+
+&lt;p&gt;While playing around in there, you can modify your tab settings with the following commands.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;"tab_size":Number&lt;/code&gt; &lt;br&gt;
+Set it equal to the number of spaces per tab. &lt;br&gt;
+Default value is 4.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;"translateTabsToSpaces":true/false&lt;/code&gt; &lt;br&gt;
+If true, all tab keypresses will be recorded as the number of spaces specified in "tab_size" instead of a tab character.  Visually, the tab key will function the same, but there will be no tab characters whatsoever. &lt;br&gt;
+Default value is false.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;"useTabStops":true/false&lt;/code&gt; &lt;br&gt;
+If true, will set tab and backspace to add/delete up to the closest tab stop regardless of whether it's a tab character or a series of spaces. &lt;br&gt;
+Defaults to true.&lt;/p&gt;
+
+&lt;p&gt;Here is an example of setting all tabs to be recorded as two spaces as per HR style guide.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;{
+  "tab_size":2,
+  "translateTabsToSpaces":true,
+  "useTabStops":true
+}&lt;/code&gt;&lt;/pre&gt;</content:encoded></item></channel></rss>

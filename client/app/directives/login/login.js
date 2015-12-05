@@ -14,8 +14,8 @@ angular.module('recipes.login', [])
     };
   }])
   .controller('LoginDirectiveCtrl', ['$scope', '$rootScope', '$uibModal', 'Auth', function($scope, $rootScope, $uibModal, Auth) {
-
     $scope.isLoggedIn = (Auth.isAuth()) ? true : false;
+    console.log($scope.isLoggedIn);
 
     $rootScope.$on('userAction', function(){
       $scope.isLoggedIn = (Auth.isAuth()) ? true : false;

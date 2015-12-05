@@ -1,0 +1,284 @@
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <title>Animating Keyboard Events in d3</title>
+    <meta name="description" content="">
+
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="shortcut icon" href="../favicon.ico">
+
+    <link rel="stylesheet" type="text/css" href="../assets/css/screen.css?v=f011d47e2b">
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic%7COpen+Sans:700,400">
+		<link rel="stylesheet" type="text/css" href="../assets/css/prism.css?v=f011d47e2b">
+    <link rel="canonical" href="index.html">
+    <meta name="referrer" content="origin">
+    
+    <meta property="og:site_name" content="Lingua Franca v2.0">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Animating Keyboard Events in d3">
+    <meta property="og:description" content="d3 can do some serious data, but it is also a pretty sweet tool to animate user input.   I'll give a little run through here on how to capture keyboard events to run a little animation.  Well, to drive a...">
+    <meta property="og:url" content="http://localhost:2368/animating-keyboard-events-in-d3/">
+    <meta property="article:published_time" content="2015-10-18T23:24:20.493Z">
+    <meta property="article:modified_time" content="2015-10-25T03:21:54.590Z">
+    
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Animating Keyboard Events in d3">
+    <meta name="twitter:description" content="d3 can do some serious data, but it is also a pretty sweet tool to animate user input.   I'll give a little run through here on how to capture keyboard events to run a little animation.  Well, to drive a...">
+    <meta name="twitter:url" content="http://localhost:2368/animating-keyboard-events-in-d3/">
+    
+    <script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "Article",
+    "publisher": "Lingua Franca v2.0",
+    "author": {
+        "@type": "Person",
+        "name": "Alex Zywiak",
+        "url": "http://localhost:2368/author/alex",
+        "sameAs": null,
+        "description": null
+    },
+    "headline": "Animating Keyboard Events in d3",
+    "url": "http://localhost:2368/animating-keyboard-events-in-d3/",
+    "datePublished": "2015-10-18T23:24:20.493Z",
+    "dateModified": "2015-10-25T03:21:54.590Z",
+    "description": "d3 can do some serious data, but it is also a pretty sweet tool to animate user input.   I&#x27;ll give a little run through here on how to capture keyboard events to run a little animation.  Well, to drive a..."
+}
+    </script>
+
+    <meta name="generator" content="Ghost 0.7">
+    <link rel="alternate" type="application/rss+xml" title="Lingua Franca v2.0" href="../rss/index.html">
+</head>
+<body class="post-template nav-closed">
+
+    <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="index.html#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+            <li class="nav-home" role="presentation"><a href="../">Home</a></li>
+    </ul>
+    <a class="subscribe-button icon-feed" href="../rss/index.rss">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+        
+
+
+<header class="main-header post-head no-cover">
+    <nav class="main-nav  clearfix">
+        
+            <a class="menu-button icon-menu" href="index.html#"><span class="word">Menu</span></a>
+    </nav>
+</header>
+
+<main class="content" role="main">
+    <article class="post">
+
+        <header class="post-header">
+            <h1 class="post-title">Animating Keyboard Events in d3</h1>
+            <section class="post-meta">
+                <time class="post-date" datetime="2015-10-18">18 October 2015</time> 
+            </section>
+        </header>
+
+        <section class="post-content">
+            <p>d3 can do some serious data, but it is also a pretty sweet tool to animate user input.  </p>
+
+<p>I'll give a little run through here on how to capture keyboard events to run a little animation.  Well, to drive a little triangle around the screen using the arrow keys. <br>
+<br> <br>
+<strong>Set Up SVG</strong></p>
+
+<p>First, we need an element to hold our d3 goodness, so we'll append an <code>svg</code> element onto the body and set its default dimensions.</p>
+
+<pre><code class="language-javascript">var svg = d3.select('body')  
+  .append('svg')
+  .attr('height', 600)
+  .attr('width', 1000);
+</code></pre>
+
+<p>Next, we'll add in a triangle polygon that will eventually be controlled by the arrow keys.  </p>
+
+<pre><code class="language-javascript">var triangle = svg.append('polygon')  
+  .attr('fill', 'yellow')
+  .attr('stroke', 'blue')
+  .attr('stroke-width', 2)
+  .attr('points', "0, 30 0, 0 40, 15 ");
+</code></pre>
+
+<p>We have a little yellow triangle, but it's stuck way up in the corner.  Let's start it out in the center of the svg element instead.  To make storing and referencing the triangles position easier, we'll add some relevant properties to the <code>triangle</code> object using <code>underscore</code>'s <code>extend</code> method.  </p>
+
+<pre><code class="language-javascript">_.extend(triangle, {  
+  x: 500,
+  y: 300,
+  angle: 0,
+  _speed: 10
+});
+</code></pre>
+
+<p>This sets the triangle's <code>x</code> and <code>y</code> values <code>500</code> and <code>300</code> respectively, or what is the middle of our current svg.  These coordinates are meaningless properties until we actually place the triangle using the <code>transform</code> attribute provided to us by d3.  </p>
+
+<pre><code class="language-javascript">triangle.attr('transform', function() {  
+  return 'translate(' + triangle.x + ',' + triangle.y + ')';
+})
+</code></pre>
+
+<p>At this point, we have a pretty little triangle that is still tragically static.  Let's get our little tripartite friend moving! <br>
+<br> <br>
+<strong>Catching Key Events</strong></p>
+
+<p>The first thing we're going to do to get some movement, is to set up capturing keyboard events.  d3 has a very straightforward method to do so.  Unfortunately, it is only useful for catching single keys being pressed at a time.  We're going to expand it a little so we can react to multiple keys pressed at once, in this case to model diagonal movement.</p>
+
+<p>To do so, we're going to put watchers on both the <code>keydown</code> and <code>keyup</code> events.  To store which keys are being pressed, we'll create an object <code>keyPressed</code>.  </p>
+
+<pre><code class="language-javascript">var keyPressed = {};
+
+d3.select('body')  
+  .on('keydown', function() {
+    keyPressed[d3.event.keyIdentifier] = true;
+  })
+  .on('keyup', function() {
+    keyPressed[d3.event.keyIdentifier] = false;
+  });
+</code></pre>
+
+<p>With this in place, every <code>keydown</code> event will store that event's <code>keyIdentifier</code> as the property name in the <code>keyPressed</code> object and set its value to <code>true</code>.  On a keydown event, the corresponding <code>keyIdentifier</code> will reset it to <code>false</code>.  With this setup, we can monitor all keys that are being pressed simultaneously. <br>
+<br> <br>
+<strong>Gettin' Our Move On</strong></p>
+
+<p>So far we have a stationary triangle and some code that tells me what buttons I'm pushing. Great.  Not too exciting yet, but we'll get there, I promise.</p>
+
+<p>In order to set and manipulate our triangle's position, we're going to use the <code>transform/translate</code> property of svg <code>polygons</code>.</p>
+
+<p>We'll create a <code>moveTriangle</code> function to monitor our keypresses and to change the triangle's <code>x</code> and <code>y</code> properties to appropriately respond to the arrow keys.  <code>moveTriangle</code> will reference the <code>keyPressed</code> object to find out what keys are currently being pressed.  We'll also add a helper function <code>isInBounds</code> to make sure no one is flying off the screen.  (You may wonder how we're going to reference <code>keyPressed</code> in real time, but don't worry, d3 will come through in the end.)  </p>
+
+<pre><code class="language-javascript">var moveTriangle = function() {
+
+  var x = triangle.x;
+  var y = triangle.y;
+
+  if (keyPressed['Left']) {
+    triangle.x = isInBounds(x - triangle._speed, 'width');
+  }
+  if (keyPressed['Up']) {
+    triangle.y = isInBounds(y - triangle._speed, 'height');
+  }
+  if (keyPressed['Right']) {
+    triangle.x = isInBounds(x + triangle._speed, 'width');
+  }
+  if (keyPressed['Down']) {
+    triangle.y = isInBounds(y + triangle._speed, 'height');
+  }
+  triangle.move(x, y);
+};
+
+var isInBounds = function(n, dimension) {  
+  if (n &lt; 0) {
+    return 0;
+  } else if (n &gt; svg.attr(dimension)) {
+    return svg.attr(dimension);
+  } else {
+    return n;
+  }
+}
+</code></pre>
+
+<p>The <code>moveTriangle</code> effectively translates the arrow keys into new <code>x</code> and <code>y</code> coordinates on the <code>triangle</code> object, but again, we need to make use of <code>translate</code> to actually move the triangle on the screen.  On the last line in <code>moveTriangle</code> we reference a <code>move</code> method on triangle.  Let's write that now.</p>
+
+<pre><code class="language-javascript">triangle.move = function(x, y) {  
+  var dx = this.x - x;
+  var dy = this.y - y;
+  if (dx !== 0 || dy !== 0) {
+    this.angle = 360 * (Math.atan2(dy, dx) / (Math.PI * 2));
+  }
+  triangle.attr('transform', function() {
+    return 'rotate(' + [this.angle, this.x + 20, this.y + 15].join() + ')' +
+      'translate(' + [this.x, this.y].join() + ')';
+  }.bind(this));
+};
+</code></pre>
+
+<p>Under the fancy trigonometry, this function's main purpose is to call d3's <code>attr</code> method on our <code>triangle</code> object and relay the appropriate position to the <code>translate</code> attribute.  We also run some fancy math to keep track of where our triangle is pointing just to keep things interesting. <br>
+<br> <br>
+<strong>Animate!</strong> <br>
+All this code is well and good, but it needs a final line of d3 magic to work.  As it stands, we keep track of what keys are pressed, but the <code>moveTriangle</code> function isn't being called on! How will it know when the arrows are being pressed?  </p>
+
+<pre><code class="language-javascript">d3.timer(moveTriangle);  
+</code></pre>
+
+<p>Toss that little line in there, and have fun!  d3's <code>timer</code> method will tie our <code>moveTriangle</code> function smoothly into the internal gears and cogs of it's time keeping mechanisms.  It will now be run continuously and keep referencing the <code>keyPressed</code> object for an updated look at which keys the user is pressing and then appropriately telling our little yellow triangle where to go.</p>
+        </section>
+
+        <footer class="post-footer">
+
+
+
+            <section class="author">
+                <h4><a href="../author/alex/">Alex Zywiak</a></h4>
+
+                    <p>Read <a href="../author/alex/">more posts</a> by this author.</p>
+                <div class="author-meta">
+                    
+                    
+                </div>
+            </section>
+
+
+            <section class="share">
+                <h4>Share this post</h4>
+                <a class="icon-twitter" href="https://twitter.com/intent/tweet?text=Animating%20Keyboard%20Events%20in%20d3&amp;url=http://localhost:2368/animating-keyboard-events-in-d3/" onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                    <span class="hidden">Twitter</span>
+                </a>
+                <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:2368/animating-keyboard-events-in-d3/" onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                    <span class="hidden">Facebook</span>
+                </a>
+                <a class="icon-google-plus" href="https://plus.google.com/share?url=http://localhost:2368/animating-keyboard-events-in-d3/" onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+                    <span class="hidden">Google+</span>
+                </a>
+            </section>
+
+        </footer>
+
+    </article>
+</main>
+
+<aside class="read-next">
+    <a class="read-next-story no-cover" href="../audio-visualiser-using-d3/">
+        <section class="post">
+            <h2>Audio Visualiser Using D3</h2>
+            <p>D3 isn't just for squares with their pie charts and bar graphs anymore.  D3 can be totally Rock 'n…</p>
+        </section>
+    </a>
+    <a class="read-next-story prev no-cover" href="../setting-up-sublime-linter-in-sublime-text-3/">
+        <section class="post">
+            <h2>Setting Up Sublime Linter in Sublime Text 3</h2>
+            <p>Syntax errors suck.  They're pretty much like the worst.  We've all been there.  You have a moment of transcendental…</p>
+        </section>
+    </a>
+</aside>
+
+
+
+        <footer class="site-footer clearfix">
+            <section class="copyright"><a href="../">Lingua Franca v2.0</a> © 2015</section>
+            <section class="poweredby">Proudly published with <a href="https://ghost.org">Ghost</a></section>
+        </footer>
+
+    </div>
+
+    
+
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="../assets/js/jquery.fitvids.js?v=f011d47e2b"></script>
+    <script type="text/javascript" src="../assets/js/index.js?v=f011d47e2b"></script>
+    <script type="text/javascript" src="../assets/js/prism.js?v=f011d47e2b"></script> 
+
+</body>

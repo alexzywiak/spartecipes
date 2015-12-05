@@ -1,0 +1,276 @@
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <title>Audio Visualiser Using D3</title>
+    <meta name="description" content="">
+
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="shortcut icon" href="../favicon.ico">
+
+    <link rel="stylesheet" type="text/css" href="../assets/css/screen.css?v=f011d47e2b">
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic%7COpen+Sans:700,400">
+		<link rel="stylesheet" type="text/css" href="../assets/css/prism.css?v=f011d47e2b">
+    <link rel="canonical" href="index.html">
+    <meta name="referrer" content="origin">
+    
+    <meta property="og:site_name" content="Lingua Franca v2.0">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Audio Visualiser Using D3">
+    <meta property="og:description" content="D3 isn't just for squares with their pie charts and bar graphs anymore.  D3 can be totally Rock 'n Roll, man!  And to prove that to all you naysayers, we'll go ahead and build a sweet rockin' audio visualiser right...">
+    <meta property="og:url" content="http://localhost:2368/audio-visualiser-using-d3/">
+    <meta property="article:published_time" content="2015-10-24T21:43:46.831Z">
+    <meta property="article:modified_time" content="2015-10-28T02:17:57.353Z">
+    
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Audio Visualiser Using D3">
+    <meta name="twitter:description" content="D3 isn't just for squares with their pie charts and bar graphs anymore.  D3 can be totally Rock 'n Roll, man!  And to prove that to all you naysayers, we'll go ahead and build a sweet rockin' audio visualiser right...">
+    <meta name="twitter:url" content="http://localhost:2368/audio-visualiser-using-d3/">
+    
+    <script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "Article",
+    "publisher": "Lingua Franca v2.0",
+    "author": {
+        "@type": "Person",
+        "name": "Alex Zywiak",
+        "url": "http://localhost:2368/author/alex",
+        "sameAs": null,
+        "description": null
+    },
+    "headline": "Audio Visualiser Using D3",
+    "url": "http://localhost:2368/audio-visualiser-using-d3/",
+    "datePublished": "2015-10-24T21:43:46.831Z",
+    "dateModified": "2015-10-28T02:17:57.353Z",
+    "description": "D3 isn&#x27;t just for squares with their pie charts and bar graphs anymore.  D3 can be totally Rock &#x27;n Roll, man!  And to prove that to all you naysayers, we&#x27;ll go ahead and build a sweet rockin&#x27; audio visualiser right..."
+}
+    </script>
+
+    <meta name="generator" content="Ghost 0.7">
+    <link rel="alternate" type="application/rss+xml" title="Lingua Franca v2.0" href="../rss/index.html">
+</head>
+<body class="post-template nav-closed">
+
+    <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="index.html#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+            <li class="nav-home" role="presentation"><a href="../">Home</a></li>
+    </ul>
+    <a class="subscribe-button icon-feed" href="../rss/index.rss">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+        
+
+
+<header class="main-header post-head no-cover">
+    <nav class="main-nav  clearfix">
+        
+            <a class="menu-button icon-menu" href="index.html#"><span class="word">Menu</span></a>
+    </nav>
+</header>
+
+<main class="content" role="main">
+    <article class="post">
+
+        <header class="post-header">
+            <h1 class="post-title">Audio Visualiser Using D3</h1>
+            <section class="post-meta">
+                <time class="post-date" datetime="2015-10-24">24 October 2015</time> 
+            </section>
+        </header>
+
+        <section class="post-content">
+            <p>D3 isn't just for squares with their pie charts and bar graphs anymore.  D3 can be totally Rock 'n Roll, man!  And to prove that to all you naysayers, we'll go ahead and build a sweet rockin' audio visualiser right in our browser.</p>
+
+<p>Or, if you prefer, cut to the chase and check out the full code on Github <a href="https://github.com/alexzywiak/d3-Audio-Visualiser">here</a>.</p>
+
+<p><strong>Set Up index.html</strong></p>
+
+<p>To get at some tunes, I'm going to use an HTML5 <code>audio</code> tag with <code>id=player</code> right in <code>index.html</code> and just source the audio from a local file.  We can also tack on a <code>div</code> with and <code>id="visualiser"</code> for housing our visualiser.  Make sure to load up <code>d3</code> and <code>jQuery</code> while you're at it too!  </p>
+
+<p>If you're using a local audio file, you need to set up a localhost server and not just open the html file directly from your browser. Without a local server, you'll get a <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS">CORS Access Restriction</a> error when you try and run the visualiser!</p>
+
+<p><strong>Grabbing the AudioContext()</strong></p>
+
+<p>Next, we're going create an <a href="https://developer.mozilla.org/en-US/docs/Web/API/AudioContext">AudioContext</a> object, <code>context</code>, so we can get at all those sweet frequencies.  </p>
+
+<pre><code class="language-javascript">$(function(){
+    var context = new AudioContext();
+});
+</code></pre>
+
+<p><strong>Create an AnalyserNode</strong></p>
+
+<p>We'll use the <a href="https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/createAnalyser">createAnalyser</a> method on the <code>context</code> object to create an <a href="https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode">AnalyserNode</a>, <code>analyser</code>, that will provide us with the real time frequency data we're looking for.</p>
+
+<p>Then we'll set what essentially amounts to the resolution of our <code>analyser</code> object by setting its <code>fftSize</code> property.  The <code>fftSize</code> must be a power of 2 for some mathematically magical reason. The higher the resolution, the sharper the visualiser, but we'll end up animating animating exponentially more elements which can take a toll.  I've found that 512 to 1024 is a good balance between resolution and performance, but feel free to play around with it and see what you can do.  </p>
+
+<p>Finally, we'll create a <code>frequencyData</code> array which is what we'll ultimately pass as data to d3 to power our visualisation.  </p>
+
+<pre><code class="language-javascript">$(function() {
+    var context = new AudioContext();
+    var analyser = context.createAnalyser();
+    analyser.fftSize = 64;
+    var frequencyData = new Uint8Array(analyser.frequencyBinCount);
+});
+</code></pre>
+
+<p><strong>Connect Our Analyser</strong></p>
+
+<p>Next up, we have to route our tunes through our <code>analyser</code>.  Using <code>jQuery</code>, we're going to grab the <code>audio</code> HTML tag we're listening to.  We'll pass the <code>audio</code> tag element to the <code>context.createMediaElementSource</code> method  and set it as our <code>source</code>.  That will allow us to get the frequency data.  We'll connect our <code>analyser</code> to the audio <code>source</code>, and then finally, connect our <code>analyser</code> to <code>context.destination</code>, in normal parlance, you speakers, so that we can once again hear the music. Check out the <a href="https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode">AnaylserNode</a> and <a href="https://developer.mozilla.org/en-US/docs/Web/API/AudioContext">AudioContext</a> docs for more info on what ever the hell's going on here.</p>
+
+<pre><code class="language-javascript">$("#player").bind('canplay', function() {
+        var source = context.createMediaElementSource(this);
+        source.connect(analyser);
+        analyser.connect(context.destination);
+    });
+</code></pre>
+
+<p>Our <code>analyser</code> is all wired up to report back to us with real time info on what's playing.  To get an updated array of the frequency values, all we need to do is run <code>analyser.getByteFrequencyData(frequencyData)</code> and the <code>frequencyData</code> array we declared earlier, will get updated. </p>
+
+<p>To check it out, run a little <code>console.log</code> action.  </p>
+
+<pre><code class="language-javascript">setInterval(function(){  
+  analyser.getByteFrequencyData(frequencyData);
+  console.log(frequencyData)
+}, 500);
+</code></pre>
+
+<p>Once the music starts playing, you should see all kinds of numbers dancing around in the console.  Unfortunately, that's only exciting for us geeky dev types.  We'll have to up our game to get the groupies.</p>
+
+<p><strong>Visualise It</strong></p>
+
+<p>A constantly changing array of numbers!  D3 is all over that!  Let's set up an <code>svg</code> element to hold our sweet visuals.</p>
+
+<pre><code class="language-javascript">var width = 800,  
+        height = 600,
+        barPadding = 0;
+
+    var svg = d3.select('#visualiser')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+</code></pre>
+
+<p>We'll create an ever so basic bar graph in d3 bound to the frequency information.  This visualiser is as basic as they get, but d3 has so much awesomeness, your imagination is the limit.  </p>
+
+<p>Since we're going to be continuously updating our graph with the real time frequency data, we'll wrap drawing the graph in an <code>update</code> function.</p>
+
+<pre><code class="language-javascript">    var update = function(data) {
+
+        rect = svg.selectAll('rect')
+            .data(data)
+
+        rect.enter().append('rect');
+
+        rect.attr('width', function() {
+                return width / data.length - barPadding;
+            })
+            .attr('height', function(d) {
+                return d * 1000;
+            })
+            .attr('x', function(d, i) {
+                return i * width / data.length;
+            })
+            .attr('y', function(d) {
+                return height - d;
+            })
+            .attr('fill', function(d) {
+                return "rgb(0, 0, " + (d * 10) + ")";
+            });
+    };
+
+update(frequencyData);  
+</code></pre>
+
+<p>Lastly, we'll make use of <code>d3.timer()</code> to run continuously run our animation.  We also have to make sure and call <code>analyser.getByteFrequencyData(frequencyData)</code> so that we get real time audio data.  </p>
+
+<pre><code class="language-javascript">d3.timer(function() {  
+        analyser.getByteFrequencyData(frequencyData);
+        update(frequencyData);
+    });
+</code></pre>
+
+<p>And now, you only have one more question to answer.  Are you ready to Rock?  </p>
+
+<p>I'm such a nerd...</p>
+
+<p>Full code up on <a href="https://github.com/alexzywiak/d3-Audio-Visualiser">Git</a>.</p>
+        </section>
+
+        <footer class="post-footer">
+
+
+
+            <section class="author">
+                <h4><a href="../author/alex/">Alex Zywiak</a></h4>
+
+                    <p>Read <a href="../author/alex/">more posts</a> by this author.</p>
+                <div class="author-meta">
+                    
+                    
+                </div>
+            </section>
+
+
+            <section class="share">
+                <h4>Share this post</h4>
+                <a class="icon-twitter" href="https://twitter.com/intent/tweet?text=Audio%20Visualiser%20Using%20D3&amp;url=http://localhost:2368/audio-visualiser-using-d3/" onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                    <span class="hidden">Twitter</span>
+                </a>
+                <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:2368/audio-visualiser-using-d3/" onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                    <span class="hidden">Facebook</span>
+                </a>
+                <a class="icon-google-plus" href="https://plus.google.com/share?url=http://localhost:2368/audio-visualiser-using-d3/" onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+                    <span class="hidden">Google+</span>
+                </a>
+            </section>
+
+        </footer>
+
+    </article>
+</main>
+
+<aside class="read-next">
+    <a class="read-next-story no-cover" href="../modelling-collision-detection-in-d3/">
+        <section class="post">
+            <h2>Modelling Collision Detection in D3 with tween functions.</h2>
+            <p>Despite being named after a terribly awkward developmental stage, tween functions can let you do some really cool stuff…</p>
+        </section>
+    </a>
+    <a class="read-next-story prev no-cover" href="../animating-keyboard-events-in-d3/">
+        <section class="post">
+            <h2>Animating Keyboard Events in d3</h2>
+            <p>d3 can do some serious data, but it is also a pretty sweet tool to animate user input.   I'll…</p>
+        </section>
+    </a>
+</aside>
+
+
+
+        <footer class="site-footer clearfix">
+            <section class="copyright"><a href="../">Lingua Franca v2.0</a> © 2015</section>
+            <section class="poweredby">Proudly published with <a href="https://ghost.org">Ghost</a></section>
+        </footer>
+
+    </div>
+
+    
+
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="../assets/js/jquery.fitvids.js?v=f011d47e2b"></script>
+    <script type="text/javascript" src="../assets/js/index.js?v=f011d47e2b"></script>
+    <script type="text/javascript" src="../assets/js/prism.js?v=f011d47e2b"></script> 
+
+</body>

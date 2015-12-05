@@ -1,0 +1,247 @@
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <title>Modelling Collision Detection in D3 with tween functions.</title>
+    <meta name="description" content="">
+
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="shortcut icon" href="../favicon.ico">
+
+    <link rel="stylesheet" type="text/css" href="../assets/css/screen.css?v=f011d47e2b">
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic%7COpen+Sans:700,400">
+		<link rel="stylesheet" type="text/css" href="../assets/css/prism.css?v=f011d47e2b">
+    <link rel="canonical" href="index.html">
+    <meta name="referrer" content="origin">
+    
+    <meta property="og:site_name" content="Lingua Franca v2.0">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Modelling Collision Detection in D3 with tween functions.">
+    <meta property="og:description" content="Despite being named after a terribly awkward developmental stage, tween functions can let you do some really cool stuff in d3. The tween function is run on an element during a d3 transition.  It allows you to register a custom...">
+    <meta property="og:url" content="http://localhost:2368/modelling-collision-detection-in-d3/">
+    <meta property="article:published_time" content="2015-10-31T15:47:37.248Z">
+    <meta property="article:modified_time" content="2015-10-31T15:47:37.247Z">
+    
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Modelling Collision Detection in D3 with tween functions.">
+    <meta name="twitter:description" content="Despite being named after a terribly awkward developmental stage, tween functions can let you do some really cool stuff in d3. The tween function is run on an element during a d3 transition.  It allows you to register a custom...">
+    <meta name="twitter:url" content="http://localhost:2368/modelling-collision-detection-in-d3/">
+    
+    <script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "Article",
+    "publisher": "Lingua Franca v2.0",
+    "author": {
+        "@type": "Person",
+        "name": "Alex Zywiak",
+        "url": "http://localhost:2368/author/alex",
+        "sameAs": null,
+        "description": null
+    },
+    "headline": "Modelling Collision Detection in D3 with tween functions.",
+    "url": "http://localhost:2368/modelling-collision-detection-in-d3/",
+    "datePublished": "2015-10-31T15:47:37.248Z",
+    "dateModified": "2015-10-31T15:47:37.247Z",
+    "description": "Despite being named after a terribly awkward developmental stage, tween functions can let you do some really cool stuff in d3. The tween function is run on an element during a d3 transition.  It allows you to register a custom..."
+}
+    </script>
+
+    <meta name="generator" content="Ghost 0.7">
+    <link rel="alternate" type="application/rss+xml" title="Lingua Franca v2.0" href="../rss/index.html">
+</head>
+<body class="post-template nav-closed">
+
+    <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="index.html#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+            <li class="nav-home" role="presentation"><a href="../">Home</a></li>
+    </ul>
+    <a class="subscribe-button icon-feed" href="../rss/index.rss">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+        
+
+
+<header class="main-header post-head no-cover">
+    <nav class="main-nav  clearfix">
+        
+            <a class="menu-button icon-menu" href="index.html#"><span class="word">Menu</span></a>
+    </nav>
+</header>
+
+<main class="content" role="main">
+    <article class="post">
+
+        <header class="post-header">
+            <h1 class="post-title">Modelling Collision Detection in D3 with tween functions.</h1>
+            <section class="post-meta">
+                <time class="post-date" datetime="2015-10-31">31 October 2015</time> 
+            </section>
+        </header>
+
+        <section class="post-content">
+            <p>Despite being named after a terribly awkward developmental stage, <code>tween</code> functions can let you do some really cool stuff in d3.</p>
+
+<p>The tween function is run on an element during a d3 transition.  It allows you to register a custom function that will be run at every increment between the two poles of that transition and get reference to the precise attributes of the element each step of the way.  </p>
+
+<p>I came across tween functions to model collision detection when I was trying to implement a rudimentary Asteroids clone.  For this example, I'll boil it down a little more, and use a custom tween function to determine when to randomly moving circles intersect each other.</p>
+
+<p><strong>Set Up d3</strong></p>
+
+<p>To get things going we're going to set up the <code>svg</code> element and append it.  We'll also add some data for d3 to join for some sweet circles.</p>
+
+<pre><code class="language-javascript">  var svg = d3.select('#container')
+    .append('svg')
+    .attr('height', 600)
+    .attr('width', 1000);
+
+  var data = ['blue', 'purple'];
+</code></pre>
+
+<p><strong>Set Up Animation</strong></p>
+
+<p>Next up, we're going to set up a simple animation to have our circles bounce around between random points on the screen.  We'll chain the animations by calling <code>.each('end', move)</code> to re-call the <code>move</code> function when the original transition is completed.</p>
+
+<pre><code class="language-javascript">  var move = function() {
+    var circles = svg.selectAll('circle')
+      .data(data);
+
+    circles.enter()
+      .append('circle')
+
+    var circleAttrs = circles
+      .transition()
+      .duration(1000)
+      .attr('cx', function(d) {
+        return Math.floor(Math.random() * 1000);
+      })
+      .attr('cy', function(d) {
+        return Math.floor(Math.random() * 600);
+      })
+      .attr('r', 100)
+      .attr('fill', function(d) {
+        return d;
+      })
+      .tween('collision', collisionDetection)
+      .each('end', move);
+  };
+
+  move();
+</code></pre>
+
+<p><strong>Enter Tween Function</strong></p>
+
+<p>Notice right before the final call to <code>.each</code>, we add our tween function.  The first argument is the name the tween function is registered for, and the second argument is a factory function that will return a function to be run on all the increments between the start and the end of the transition.</p>
+
+<p>The factory function passed to <code>tween</code> must <strong>return a function</strong>.  It's also possible to take advantage of the closure nature of the factory function to preserve and reference any information from the start of the transition.</p>
+
+<p>Our factory function, <code>collisionDetection</code> will return a function that will grab all other present circles using <code>d3.select</code>, and using some slick 8th grade Pythagorean algebra, determine the distance between our circle and any others.  If the calculated distance is less than the sum of their two radii, we'll consider them collided.</p>
+
+<pre><code class="language-javascript">var collisionDetection = function() {  
+    return function() {
+      var thisCircle = d3.select(this);
+
+      d3.select('circle').each(function() {
+        var otherCircle = d3.select(this);
+
+        if (thisCircle.datum() !== otherCircle.datum()) {
+
+          dx = thisCircle.attr('cx') - otherCircle.attr('cx'),
+            dy = thisCircle.attr('cy') - otherCircle.attr('cy'),
+            distance = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+
+          if (distance &lt; +thisCircle.attr('r') + +otherCircle.attr('r')) {
+            collision(thisCircle, otherCircle);
+          }
+        }
+      });
+    };
+  };
+</code></pre>
+
+<p>In this example, on a collision it will call a collision function passing in the two offending circles.  Throw in a quick <code>console.log</code> to see what's going on.</p>
+
+<pre><code class="language-javascript">  var collision = function(thisCircle, otherCircle) {
+    console.log('Collision at: ' + thisCircle.attr('cx') + ',' + thisCircle.attr('cy'));
+  }
+</code></pre>
+
+<p><code>tween</code> functions give you a lot of room to play around when using transitions in d3.  Check out the <a href="https://github.com/mbostock/d3/wiki/Transitions#attrTween">documentation</a> and make some sweet stuff.</p>
+        </section>
+
+        <footer class="post-footer">
+
+
+
+            <section class="author">
+                <h4><a href="../author/alex/">Alex Zywiak</a></h4>
+
+                    <p>Read <a href="../author/alex/">more posts</a> by this author.</p>
+                <div class="author-meta">
+                    
+                    
+                </div>
+            </section>
+
+
+            <section class="share">
+                <h4>Share this post</h4>
+                <a class="icon-twitter" href="https://twitter.com/intent/tweet?text=Modelling%20Collision%20Detection%20in%20D3%20with%20tween%20functions.&amp;url=http://localhost:2368/modelling-collision-detection-in-d3/" onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                    <span class="hidden">Twitter</span>
+                </a>
+                <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:2368/modelling-collision-detection-in-d3/" onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                    <span class="hidden">Facebook</span>
+                </a>
+                <a class="icon-google-plus" href="https://plus.google.com/share?url=http://localhost:2368/modelling-collision-detection-in-d3/" onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+                    <span class="hidden">Google+</span>
+                </a>
+            </section>
+
+        </footer>
+
+    </article>
+</main>
+
+<aside class="read-next">
+    <a class="read-next-story no-cover" href="../growing-a-trie-in-js-for-some-slick-word-searches/">
+        <section class="post">
+            <h2>Growing a Trie in JS for Some Slick Word Searches</h2>
+            <p>A trie is nifty little data structure that can be used to very quickly and efficiently check for the…</p>
+        </section>
+    </a>
+    <a class="read-next-story prev no-cover" href="../audio-visualiser-using-d3/">
+        <section class="post">
+            <h2>Audio Visualiser Using D3</h2>
+            <p>D3 isn't just for squares with their pie charts and bar graphs anymore.  D3 can be totally Rock 'n…</p>
+        </section>
+    </a>
+</aside>
+
+
+
+        <footer class="site-footer clearfix">
+            <section class="copyright"><a href="../">Lingua Franca v2.0</a> © 2015</section>
+            <section class="poweredby">Proudly published with <a href="https://ghost.org">Ghost</a></section>
+        </footer>
+
+    </div>
+
+    
+
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="../assets/js/jquery.fitvids.js?v=f011d47e2b"></script>
+    <script type="text/javascript" src="../assets/js/index.js?v=f011d47e2b"></script>
+    <script type="text/javascript" src="../assets/js/prism.js?v=f011d47e2b"></script> 
+
+</body>

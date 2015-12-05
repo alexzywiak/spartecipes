@@ -1,0 +1,284 @@
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <title>In a .bind about how to .apply .call?</title>
+    <meta name="description" content="">
+
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="shortcut icon" href="../favicon.ico">
+
+    <link rel="stylesheet" type="text/css" href="../assets/css/screen.css?v=f011d47e2b">
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic%7COpen+Sans:700,400">
+		<link rel="stylesheet" type="text/css" href="../assets/css/prism.css?v=f011d47e2b">
+    <link rel="canonical" href="index.html">
+    <meta name="referrer" content="origin">
+    
+    <meta property="og:site_name" content="Lingua Franca v2.0">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="In a .bind about how to .apply .call?">
+    <meta property="og:description" content="You can really tell the True JS Ninjas from the Codeacademicians when it comes to proper use of .call(), .apply(), and .bind().   All three are methods available on the JS function prototype and are used to  reassign the value of...">
+    <meta property="og:url" content="http://localhost:2368/in-a-bind-about-how-apply-call/">
+    <meta property="article:published_time" content="2015-10-12T00:08:39.057Z">
+    <meta property="article:modified_time" content="2015-10-25T03:26:12.961Z">
+    
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="In a .bind about how to .apply .call?">
+    <meta name="twitter:description" content="You can really tell the True JS Ninjas from the Codeacademicians when it comes to proper use of .call(), .apply(), and .bind().   All three are methods available on the JS function prototype and are used to  reassign the value of...">
+    <meta name="twitter:url" content="http://localhost:2368/in-a-bind-about-how-apply-call/">
+    
+    <script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "Article",
+    "publisher": "Lingua Franca v2.0",
+    "author": {
+        "@type": "Person",
+        "name": "Alex Zywiak",
+        "url": "http://localhost:2368/author/alex",
+        "sameAs": null,
+        "description": null
+    },
+    "headline": "In a .bind about how to .apply .call?",
+    "url": "http://localhost:2368/in-a-bind-about-how-apply-call/",
+    "datePublished": "2015-10-12T00:08:39.057Z",
+    "dateModified": "2015-10-25T03:26:12.961Z",
+    "description": "You can really tell the True JS Ninjas from the Codeacademicians when it comes to proper use of .call(), .apply(), and .bind().   All three are methods available on the JS function prototype and are used to  reassign the value of..."
+}
+    </script>
+
+    <meta name="generator" content="Ghost 0.7">
+    <link rel="alternate" type="application/rss+xml" title="Lingua Franca v2.0" href="../rss/index.html">
+</head>
+<body class="post-template nav-closed">
+
+    <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="index.html#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+            <li class="nav-home" role="presentation"><a href="../">Home</a></li>
+    </ul>
+    <a class="subscribe-button icon-feed" href="../rss/index.rss">Subscribe</a>
+</div>
+<span class="nav-cover"></span>
+
+
+    <div class="site-wrapper">
+
+        
+
+
+<header class="main-header post-head no-cover">
+    <nav class="main-nav  clearfix">
+        
+            <a class="menu-button icon-menu" href="index.html#"><span class="word">Menu</span></a>
+    </nav>
+</header>
+
+<main class="content" role="main">
+    <article class="post">
+
+        <header class="post-header">
+            <h1 class="post-title">In a .bind about how to .apply .call?</h1>
+            <section class="post-meta">
+                <time class="post-date" datetime="2015-10-11">11 October 2015</time> 
+            </section>
+        </header>
+
+        <section class="post-content">
+            <p>You can really tell the True JS Ninjas from the Codeacademicians when it comes to proper use of <code>.call()</code>, <code>.apply()</code>, and <code>.bind()</code>.  </p>
+
+<p>All three are methods available on the JS <code>function</code> prototype and are used to <strong> reassign the value of <code>this</code> within the calling function.</strong></p>
+
+<p>The three functions differ in how they accept arguments, in the case of <code>.call()</code> and <code>.apply()</code>, and whether they invoke the function or return a new function, as in the case of <code>.bind()</code>.</p>
+
+<p>As with all things code, it is much easier to explain in an example.</p>
+
+<pre><code class="language-javascript">var homer = {  
+    name: 'Homer',
+    catchPhrase : 'D\'Oh!',
+    activity : function(){
+      console.log('Mmmm ' + this.name + ' likes Duff!');
+    }
+};
+
+var barney = {  
+    name: 'Barney',
+    catchPhrase : 'Buuuuurp!'
+};
+
+var speak = function(greeting1, greeting2){  
+    greeting = greeting1 + greeting2 || '';
+    console.log(greeting + this.catchPhrase);
+};
+</code></pre>
+
+<p>As you can see, Homer and Barney are gregarious guys.  They need to be able to speak!  But, oh no!  <code>speak()</code> is not a native function to either of them!  <code>this.catchphrase</code> is doomed to be <code>undefined!</code></p>
+
+<pre><code class="language-javascript">speak() ==&gt; undefined  
+</code></pre>
+
+<p><strong>.call()</strong> <br>
+<code>.call(context, arg1, arg2...)</code> <br>
+The first argument that <code>.call()</code> accepts will be what is bound to the <code>this</code> keyword inside the function.</p>
+
+<p>Here, <code>homer</code> is passed as the first argument to <code>.call()</code> and so <code>homer</code> becomes bound as <code>this</code> within the <code>speak()</code> function.</p>
+
+<pre><code class="language-javascript">speak.call(homer) ==&gt; "D'Oh!"  
+</code></pre>
+
+<p>Subsequent arguments can be passed into <code>.call()</code> and they will be passed to the calling function.</p>
+
+<pre><code class="language-javascript">speak.call(homer, 'Hi, Marge! ', ' Hi, Barney! ') ==&gt; "Hi, Marge! Hi, Barney! D'Oh!"  
+</code></pre>
+
+<p><strong>.apply()</strong></p>
+
+<p><code>.apply(context, [arg list])</code> <br>
+<code>.apply()</code> works in almost the same way as <code>.call()</code>.  The only difference between the two is the type of arguments they accept.  <code>.apply()</code> will accept a single array or array-like object containing all of the arguments to be passed, whereas <code>.call()</code> accepts a comma separated list.</p>
+
+<pre><code class="language-javascript">speak.apply(barney, ['Hi Moe! ', 'Hey Homer!']); ==&gt; "Hi Moe! Hey Homer! Buuuuurp!"  
+</code></pre>
+
+<p>Notice how the values in the array object passed into <code>.apply()</code> will be passed in order as the parameters to the calling function.</p>
+
+<p>The real place these function methods shine through is you can call non-native methods bound to different objects without having to set them as properties on those objects.</p>
+
+<p>Homer loves drinking beer.  </p>
+
+<pre><code class="language-javascript">var homer = {  
+    name: 'Homer',
+    catchPhrase : 'D\'Oh!',
+    drinkBeer : function(){
+      console.log('Mmmm ' + this.name + ' likes Duff!');
+    }
+};
+
+homer.drinkBeer(); ===&gt; "Mmmm Homer likes Duff!"  
+</code></pre>
+
+<p>But Barney loves drinking beer, too!  But he doesn't have a <code>.drinkBeer()</code> method. How can Homer share his favorite activity?</p>
+
+<pre><code class="language-javascript">homer.drinkBeer.call(barney); ===&gt; "Mmmm Barney likes Duff!"  
+</code></pre>
+
+<p>The same function is called, <code>homer.drinkBeer()</code>, but by using <code>.call()</code> we can change the context to bind <code>this</code> to <code>barney</code> instead.</p>
+
+<p><strong>.bind()</strong> <br>
+<code>.bind(context, arg1, arg2....)</code> <br>
+<code>.bind()</code> has a similar function, but works in a fundamentally different way.  <code>.apply()</code> and <code>.call()</code> both <em>invoke</em> the calling function when they are called.  <code>.bind()</code> <strong>returns a function reference</strong> with the <code>this</code> keyword properly bound.</p>
+
+<p>When Homer and Barney are at Moe's Tavern, they rarely stop at one.  </p>
+
+<pre><code class="language-javascript">var getDrunk = function(cb){  
+    for(var i = 0; i &lt; 6; i++){
+        cb();
+    }
+};
+</code></pre>
+
+<p><code>.getDrunk()</code> accepts a callback and runs it six times.  Sounds like a good way to <code>.drinkBeer()</code>!</p>
+
+<pre><code class="language-javascript">getDrunk(homer.drinkBeer); ===&gt; "Mmmm Homer likes Duff!"...x6  
+getDrunk(homer.drinkBeer.call(barney)); ===&gt; undefined...x6  
+</code></pre>
+
+<p><code>.call()</code> and <code>.apply()</code> invoked the function when they are called and don't return anything so they cannot be used when a function reference is required.</p>
+
+<p><code>.bind()</code> will return a reference to a new function with the<code>this</code> keyword context properly bound.  It accepts additional arguments the same way as <code>.call()</code>.</p>
+
+<p>Huh... <br>
+<code>fn.bind(context, arg1, arg2....)</code> will return the following function.  </p>
+
+<pre><code class="language-javascript">function(){  
+  return fn.call(context, arg1, arg2....);
+};
+</code></pre>
+
+<p>So Barney can get cranked at Moe's too!  </p>
+
+<pre><code class="language-javascript">getDrunk(homer.drinkBeer.bind(barney); ===&gt; "Mmmm Barney likes Duff!"...x6  
+</code></pre>
+
+<p><code>.bind()</code> acts as a closure, so it will create a new function and return a reference to it.  If you need to use that bound function multiple times, you can save it as a variable with all the properly bound <code>this</code> goodness you could want.  </p>
+
+<pre><code class="language-javascript">var drinkBeerBarney = homer.drinkBeer.bind(barney);
+
+typeof drinkBeerBarney ===&gt; 'function'
+
+getDrunk(drinkBeerBarney); ===&gt; "Mmmm Barney likes Duff!"...x6  
+</code></pre>
+
+<p>So hopefully that will move you on your way toward some JS function binding context-fu mastery.  At least it should give you a hankering for a beer, so my job is done.</p>
+        </section>
+
+        <footer class="post-footer">
+
+
+
+            <section class="author">
+                <h4><a href="../author/alex/">Alex Zywiak</a></h4>
+
+                    <p>Read <a href="../author/alex/">more posts</a> by this author.</p>
+                <div class="author-meta">
+                    
+                    
+                </div>
+            </section>
+
+
+            <section class="share">
+                <h4>Share this post</h4>
+                <a class="icon-twitter" href="https://twitter.com/intent/tweet?text=In%20a%20.bind%20about%20how%20to%20.apply%20.call%3F&amp;url=http://localhost:2368/in-a-bind-about-how-apply-call/" onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                    <span class="hidden">Twitter</span>
+                </a>
+                <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:2368/in-a-bind-about-how-apply-call/" onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                    <span class="hidden">Facebook</span>
+                </a>
+                <a class="icon-google-plus" href="https://plus.google.com/share?url=http://localhost:2368/in-a-bind-about-how-apply-call/" onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+                    <span class="hidden">Google+</span>
+                </a>
+            </section>
+
+        </footer>
+
+    </article>
+</main>
+
+<aside class="read-next">
+    <a class="read-next-story no-cover" href="../setting-up-sublime-linter-in-sublime-text-3/">
+        <section class="post">
+            <h2>Setting Up Sublime Linter in Sublime Text 3</h2>
+            <p>Syntax errors suck.  They're pretty much like the worst.  We've all been there.  You have a moment of transcendental…</p>
+        </section>
+    </a>
+    <a class="read-next-story prev no-cover" href="../setting-tab-space-standards-in-sublime-text/">
+        <section class="post">
+            <h2>Setting Tab/Space Standards in Sublime Text</h2>
+            <p>An analogy for you; Properly indented code is to mixed spaces and tabs as  Oxford's English Dictionary is to…</p>
+        </section>
+    </a>
+</aside>
+
+
+
+        <footer class="site-footer clearfix">
+            <section class="copyright"><a href="../">Lingua Franca v2.0</a> © 2015</section>
+            <section class="poweredby">Proudly published with <a href="https://ghost.org">Ghost</a></section>
+        </footer>
+
+    </div>
+
+    
+
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="../assets/js/jquery.fitvids.js?v=f011d47e2b"></script>
+    <script type="text/javascript" src="../assets/js/index.js?v=f011d47e2b"></script>
+    <script type="text/javascript" src="../assets/js/prism.js?v=f011d47e2b"></script> 
+
+</body>
