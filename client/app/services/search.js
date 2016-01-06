@@ -6,17 +6,22 @@ angular.module('SearchFactory', [])
   .factory('Search', function($http) {
 
     /**
-     * Gets all recipes matching search criteria 
+     * Gets all recipes matching search criteria
      * @param  {string} searchCriteria [recipe criteria]
      * @return {array}                 [array of matching recipes]
      */
     var getRecipes = function(searchCriteria) {
+      console.log('calling getRecipes');
       return $http({
           method: 'GET',
           url: '/api/recipes/search/' + searchCriteria,
         })
         .then(function(data) {
-          return data.data.Results;
+          console.log('get recipes: ', data);
+          return data.data;
+        })
+        .catch(function(err) {
+          console.log(err);
         });
     };
 
@@ -31,8 +36,11 @@ angular.module('SearchFactory', [])
           url: '/api/recipes/' + recipeID,
         })
         .then(function(data) {
-          console.log(data.data);
+          console.log('get single item\'s recipe data: ', data);
           return data.data;
+        })
+        .catch(function(err) {
+          console.log(err);
         });
     };
 

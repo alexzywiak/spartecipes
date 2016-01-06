@@ -24,7 +24,7 @@ angular.module('IngredientFactory', [])
      * Converts object into an array
      * Adds each property as an element
      * @param  {[object]} list [object]
-     * @return {[array]}       
+     * @return {[array]}
      */
     var zip = function(list){
       var results = [];
@@ -32,7 +32,7 @@ angular.module('IngredientFactory', [])
         results.push(list[prop]);
       }
       return results;
-    };  
+    };
 
     /**
      * Combines ingredients with the same IngredientID
@@ -42,16 +42,16 @@ angular.module('IngredientFactory', [])
      */
     var orderIngredients = function(ingredientList) {
       return ingredientList.reduce(function(list, ingredient) {
-        if (!list[ingredient.IngredientID]) {
-          list[ingredient.IngredientID] = {
-            Name: ingredient.Name,
+        if (!list[ingredient.$$hashkey]) {
+          list[ingredient.$$hashkey] = {
+            Name: ingredient.name,
             quantity: []
           };
         }
-        list[ingredient.IngredientID].quantity.push({
-          Quantity: ingredient.Quantity,
-          DisplayQuantity: ingredient.DisplayQuantity,
-          Unit: ingredient.Unit
+        list[ingredient.$$hashkey].quantity.push({
+          Quantity: ingredient.amount,
+          DisplayQuantity: ingredient.originalString,
+          Unit: ingredient.unit
         });
         return list;
       }, {});
@@ -66,7 +66,7 @@ angular.module('IngredientFactory', [])
 
       return ingredients.reduce(function(list, item) {
 
-        var unitObj = toUnit(item.Quantity, item.Unit);
+        var unitObj = toUnit(item.amount, item.unit);
 
         // if item is a recognized unit
         if (unitObj) {
@@ -97,7 +97,7 @@ angular.module('IngredientFactory', [])
     /**
      * Converts to mathjs library unit object
      * Returns false if not a valid mathjs unit
-     * @param  {[int]} quantity   
+     * @param  {[int]} quantity
      * @param  {[string]} unit     [name of unit]
      * @return {[boolean/object]}  [returns mathjs unit or false if not valid]
      */
